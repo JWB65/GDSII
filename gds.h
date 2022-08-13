@@ -165,3 +165,19 @@ bool gds_poly_contains_point(struct gds_ipair* poly, int n, struct gds_ipair p);
 * Prints all top cells of a gds database structure
 */
 void gds_top_cells(struct gds_db* gds);
+
+/**
+* Deletes all polygons in pset
+*/
+void gds_polyset_delete(vec* pset)
+{
+	if (pset == NULL) return;
+
+	for (int i = 0; i < pset->size; i++) {
+		struct gds_poly* p = vec_get(pset, i);
+		free(p->pairs);
+		free(p);
+	}
+	vec_free(pset);
+	free(pset);
+}
