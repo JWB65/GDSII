@@ -987,10 +987,10 @@ GDS_ERROR gds_collapse(struct gds_db* gds, const char* cell, const double* bound
 	g_info.out_pset = pvec;
 
 	if (bounds != NULL) {
-		g_info.bb.xmin = bounds[0] / gds->uu_per_dbunit;
-		g_info.bb.xmax = (bounds[0] + bounds[2]) / gds->uu_per_dbunit;
-		g_info.bb.ymin = bounds[1] / gds->uu_per_dbunit;
-		g_info.bb.ymax = (bounds[1] + bounds[3]) / gds->uu_per_dbunit;
+		g_info.bb.xmin = (int32_t) (bounds[0] / gds->uu_per_dbunit);
+		g_info.bb.xmax = (int32_t) ((bounds[0] + bounds[2]) / gds->uu_per_dbunit);
+		g_info.bb.ymin = (int32_t) (bounds[1] / gds->uu_per_dbunit);
+		g_info.bb.ymax = (int32_t) ((bounds[1] + bounds[3]) / gds->uu_per_dbunit);
 		g_info.use_bb = true;
 	} else {
 		g_info.use_bb = false;
@@ -1124,18 +1124,7 @@ void gds_top_cells(struct gds_db* gds)
 	}
 }
 
-/*
-vector* gds_polyset_new()
-{
-	vector* pset;
-
-	pset = malloc(sizeof(vector));
-	vec_init(pset);
-
-	return pset;
-}
-
-void gds_polyset_delete(vector* pset)
+void gds_polyset_delete(vec* pset)
 {
 	if (pset == NULL) return;
 
@@ -1146,5 +1135,16 @@ void gds_polyset_delete(vector* pset)
 	}
 	vec_free(pset);
 	free(pset);
+}
+
+/*
+vector* gds_polyset_new()
+{
+	vector* pset;
+
+	pset = malloc(sizeof(vector));
+	vec_init(pset);
+
+	return pset;
 }
 */
