@@ -10,13 +10,7 @@
 *
 */
 
-//#include <inttypes.h>
-//#include <stdio.h>
-//#include <stdlib.h>
-//#include <string.h>
-
 #include "gds.h"
-//#include "vec.h"
 
 int main(int argc, char** argv)
 {
@@ -27,26 +21,23 @@ int main(int argc, char** argv)
 	// create the gds database from the input file
 	struct gds_db* gds_db = NULL;
 	
-	if ((result = gds_db_new(&gds_db, "PM01B.gds")) != SUCCESS) {
-		printf("Error %d opening GDS file\n", result);
+	if ((result = gds_db_new(&gds_db, "NAND.gds")) != SUCCESS) {
+		printf("Error %d creating the GDS database\n", result);
 		return 0;
 	}
 
-	//double bounds[4] = { 28.7, 45.2, 50.0, 85.5 };
-	double cut[4] = { 544.44, 40376.0, 48.0, 48.0 };
-	double bounds[4] = { cut[0], cut[1], cut[0] + cut[2], cut[1] + cut[3] };
+	double bounds[4] = { 28.7, 45.2, 50.0, 85.5 };
+	//double cut[4] = { 544.44, 40376.0, 48.0, 48.0 };
+	//double bounds[4] = { cut[0], cut[1], cut[0] + cut[2], cut[1] + cut[3] };
 
-	/* collapse cell @cell and write to file and polygon vector */
 	vec* pset = vec_new();
-
-	if ((result = gds_collapse(gds_db, "0_PM01B_mask", bounds, mcount, "out.gds", pset)) != SUCCESS)
-	{
+	if ((result = gds_collapse(gds_db, "0_PM01B_mask", bounds, mcount, "out.gds", pset)) != SUCCESS) {
 		printf("Error %d found in cell collapse\n", result);
 	} else {
 		printf("Found %d polygons in cell\n", (int) pset->size);
 	}
 
-	/* delete the gds database */
+	// delete the database
 	gds_db_delete(gds_db);
 
 	return 0;
