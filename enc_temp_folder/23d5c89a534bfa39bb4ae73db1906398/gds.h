@@ -123,7 +123,7 @@ struct gds_db {
 /**
 * Creates a gds database structure from a file
 *
-* Return: GDS_ERROR type
+* Return: error code
 */
 GDS_ERROR gds_db_new(struct gds_db** gds, const char* file);
 

@@ -10,6 +10,7 @@
 
 #define _USE_MATH_DEFINES
 #include <math.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -72,12 +73,19 @@ struct gds_trans {
 	short mirror;
 };
 
+struct bb {
+	int32_t xmin;
+	int32_t xmax;
+	int32_t ymin;
+	int32_t ymax;
+};
+
 // Data to pass during recursion
 struct rinfo {
-	FILE* out_file;
 	vec* out_pset;
 	struct gds_db* gds;
-	struct gds_ipair* bb;
+	struct bb bb;
+	bool use_bb;
 	uint64_t scount, pcount, max_polys;
 } g_info;
 
@@ -385,22 +393,22 @@ static bool poly_overlap_test(struct gds_ipair* p, int size)
 	for (int i = 0; i < size - 1; i++) {
 		if (p[i].x > maxx)  maxx = p[i].x;
 	}
-	if (maxx < g_info.bb[0].x) return false;
+	if (maxx < g_info.bb.xmin) return false;
 
 	for (int i = 0; i < size - 1; i++) {
 		if (p[i].y > maxy)  maxy = p[i].y;
 	}
-	if (maxy < g_info.bb[0].y) return false;
+	if (maxy < g_info.bb.ymin) return false;
 
 	for (int i = 0; i < size - 1; i++) {
 		if (p[i].x < minx)  minx = p[i].x;
 	}
-	if (minx > g_info.bb[2].x) return false;
+	if (minx > g_info.bb.xmax) return false;
 
 	for (int i = 0; i < size - 1; i++) {
 		if (p[i].y < miny)  miny = p[i].y;
 	}
-	if (miny > g_info.bb[2].y) return false;
+	if (miny > g_info.bb.ymax) return false;
 
 	return true;
 }
@@ -410,7 +418,7 @@ static void add_poly(struct gds_ipair* pairs, int size, uint16_t layer)
 {
 	g_info.scount++;
 
-	if (!g_info.bb || poly_overlap_test(pairs, size)) {
+	if (!g_info.use_bb || poly_overlap_test(pairs, size)) {
 
 #ifdef GDS_TRANSLATE
 		// Define the location of the bounding box as the origin of the collapsed cell
@@ -419,14 +427,7 @@ static void add_poly(struct gds_ipair* pairs, int size, uint16_t layer)
 			pairs[i].y = pairs[i].y - g_info.bb[0].y;
 		}
 #endif
-
-		if (g_info.out_file) {
-			file_append_poly(g_info.out_file, pairs, size, layer);
-		}
-
-		if (g_info.out_pset) {
-			polyset_add_poly(g_info.out_pset, pairs, size, layer);
-		}
+		polyset_add_poly(g_info.out_pset, pairs, size, layer);
 
 		// pcount is the polygon counter
 		g_info.pcount++;
@@ -515,7 +516,7 @@ static void collapse_cell(struct gds_cell* top, struct gds_trans tra)
 
 		// Calculate the origin of the sub cell with the accumulated transformation
 		struct gds_ipair ori;
-		ori = transform_point ((struct gds_ipair) { p->x , p->y }, tra);
+		ori = transform_point((struct gds_ipair) { p->x, p->y }, tra);
 
 		// Accumulate the transformation for vertices in the sub cell
 		struct gds_trans acc_tra;
@@ -548,12 +549,12 @@ static void collapse_cell(struct gds_cell* top, struct gds_trans tra)
 		struct gds_cell* str = p->cell;
 
 		// (v_col_x, v_col_y) vector in column direction
-		double v_col_x = ((double)(p->x2 - p->x1)) / p->col;
-		double v_col_y = ((double)(p->y2 - p->y1)) / p->col;
+		float v_col_x = ((float)(p->x2 - p->x1)) / p->col;
+		float v_col_y = ((float)(p->y2 - p->y1)) / p->col;
 
 		// (v_row_x, v_row_y) vector in row direction
-		double v_row_x = ((double)(p->x3 - p->x1)) / p->row;
-		double v_row_y = ((double)(p->y3 - p->y1)) / p->row;
+		float v_row_x = ((float)(p->x3 - p->x1)) / p->row;
+		float v_row_y = ((float)(p->y3 - p->y1)) / p->row;
 
 		// Cosine and sine of the accumulated transformation
 		float sin = sinf(tra.angle);
@@ -613,7 +614,7 @@ GDS_ERROR gds_db_new(struct gds_db** gds, const char* file)
 	FILE* p_file = NULL;
 	fopen_s(&p_file, file, "rb");
 	if (!p_file)
-		return FILE_ERROR;
+		return GDS_FILE_ERROR;
 
 	*gds = calloc(1, sizeof(struct gds_db));
 	(*gds)->cells = vec_new();
@@ -776,9 +777,9 @@ GDS_ERROR gds_db_new(struct gds_db** gds, const char* file)
 		case GDS_ANGLE: // SREF, AREF, TEXT
 
 			if (cur_sref) {
-				cur_sref->angle = (float) (M_PI * buf_read_float(buf) / 180.0);
+				cur_sref->angle = (float)(M_PI * buf_read_float(buf) / 180.0);
 			} else if (cur_aref) {
-				cur_aref->angle = (float) (M_PI * buf_read_float(buf) / 180.0);
+				cur_aref->angle = (float)(M_PI * buf_read_float(buf) / 180.0);
 			}
 
 			break;
@@ -786,9 +787,9 @@ GDS_ERROR gds_db_new(struct gds_db** gds, const char* file)
 			//printf("--> MAG read\n");
 
 			if (cur_sref) {
-				cur_sref->mag = (float) buf_read_float(buf);
+				cur_sref->mag = (float)buf_read_float(buf);
 			} else if (cur_aref) {
-				cur_aref->mag = (float) buf_read_float(buf);
+				cur_aref->mag = (float)buf_read_float(buf);
 			}
 
 			break;
@@ -918,7 +919,7 @@ GDS_ERROR gds_db_new(struct gds_db** gds, const char* file)
 		}
 	}
 
-	return SUCCESS;
+	return GDS_SUCCESS;
 }
 
 static void gds_cell_delete(struct gds_cell* s)
@@ -971,66 +972,68 @@ void gds_db_delete(struct gds_db* gds)
 }
 
 GDS_ERROR gds_collapse(struct gds_db* gds, const char* cell, const double* bounds,
-	uint64_t max_polys, const char* dest, vec* pvec)
+	uint64_t max_polys, vec* pvec)
 {
-	if (cell == NULL) {
-		return INVALID_ARGUMENT;
-	}
+	memset(&g_info, 0, sizeof(g_info));
 
-	if (gds == NULL) {
-		return INVALID_ARGUMENT;
-	}
+	if (cell == NULL)
+		return GDS_INVALID_ARGUMENT;
 
-	// Write header records to file
+	if (gds == NULL)
+		return GDS_INVALID_ARGUMENT;
 
-	FILE* pdest = NULL;
-	if (dest != NULL) {
-		fopen_s(&pdest, dest, "wb");
-		if (pdest == NULL)
-			return FILE_ERROR;
-	}
+	g_info.gds = gds;
+	g_info.max_polys = max_polys;
+	g_info.out_pset = pvec;
 
-	if (dest != NULL) {
-		char access[24] = { 0 }; // Just write zero to BGNLIB and BGNSTR
-		file_append_short(pdest, GDS_HEADER, 600);
-		file_append_bytes(pdest, GDS_BGNLIB, access, 24);
-		file_append_string(pdest, GDS_LIBNAME, "");
-		file_append_bytes(pdest, GDS_UNITS, (char*)gds->units, 16);
-		file_append_bytes(pdest, GDS_BGNSTR, access, 24);
-		file_append_string(pdest, GDS_STRNAME, "TOP");
-	}
-
-	// Create the bounding box
-	struct gds_ipair* bbox = NULL;
 	if (bounds != NULL) {
-
-		if (bounds[2] <= bounds[0] || bounds[3] <= bounds[1])
-			return INVALID_ARGUMENT;
-
-		bbox = malloc(5 * sizeof(struct gds_ipair));
-
-		bbox[0] = (struct gds_ipair){ (int)(bounds[0] / gds->uu_per_dbunit), (int)(bounds[1] / gds->uu_per_dbunit) };
-		bbox[1] = (struct gds_ipair){ (int)(bounds[0] / gds->uu_per_dbunit), (int)(bounds[3] / gds->uu_per_dbunit) };
-		bbox[2] = (struct gds_ipair){ (int)(bounds[2] / gds->uu_per_dbunit), (int)(bounds[3] / gds->uu_per_dbunit) };
-		bbox[3] = (struct gds_ipair){ (int)(bounds[2] / gds->uu_per_dbunit), (int)(bounds[1] / gds->uu_per_dbunit) };
-		bbox[4] = bbox[0];
+		g_info.bb.xmin = bounds[0] / gds->uu_per_dbunit;
+		g_info.bb.xmax = (bounds[0] + bounds[2]) / gds->uu_per_dbunit;
+		g_info.bb.ymin = bounds[1] / gds->uu_per_dbunit;
+		g_info.bb.ymax = (bounds[1] + bounds[3]) / gds->uu_per_dbunit;
+		g_info.use_bb = true;
+	} else {
+		g_info.use_bb = false;
 	}
 
 	// Find the gds structure to expand
-	struct gds_cell* top = find_struct(gds, cell);
+	struct gds_cell* top = find_struct(gds, (char*)cell);
 	if (top == NULL)
-		return CELL_NOT_FOUND;
+		return GDS_CELL_NOT_FOUND;
 
 	// Initial transformation of top level cell
 	struct gds_trans trans = (struct gds_trans){ .x = 0, .y = 0, .mag = 1.0, .angle = 0.0, .mirror = 0 };
 
-	// The rinfo structure is used for common data during recursion
-	
-	g_info = (struct rinfo){ .gds = gds, .bb = bbox, .max_polys = max_polys, .out_file = pdest, .out_pset = pvec,
-						   .scount = 0, .pcount = 0 };
-
 	// start the recursion
 	collapse_cell(top, trans);
+
+	return GDS_SUCCESS;
+}
+
+GDS_ERROR gds_write(struct gds_db* gds, const char* dest, vec* pset)
+{
+	if (dest == NULL)
+		return GDS_INVALID_ARGUMENT;
+
+	FILE* pdest = NULL;
+
+	fopen_s(&pdest, dest, "wb");
+	if (pdest == NULL)
+		return GDS_FILE_ERROR;
+
+	char access[24] = { 0 }; // Just write zero to BGNLIB and BGNSTR
+	file_append_short(pdest, GDS_HEADER, 600);
+	file_append_bytes(pdest, GDS_BGNLIB, access, 24);
+	file_append_string(pdest, GDS_LIBNAME, "");
+	file_append_bytes(pdest, GDS_UNITS, (char*)gds->units, 16);
+	file_append_bytes(pdest, GDS_BGNSTR, access, 24);
+	file_append_string(pdest, GDS_STRNAME, "TOP");
+
+	for (int i = 0; i < pset->size; i++) {
+		struct gds_poly* p = vec_get(pset, i);
+
+		file_append_poly(pdest, p->pairs, p->size, p->layer);
+	}
 
 	// write the tail headers to the outfile
 	if (dest != NULL) {
@@ -1042,11 +1045,8 @@ GDS_ERROR gds_collapse(struct gds_db* gds, const char* cell, const double* bound
 		fclose(pdest);
 	}
 
-	free(bbox);
-
-	return 0;
+	return GDS_SUCCESS;
 }
-
 bool gds_poly_contains_point(struct gds_ipair* poly, int n, struct gds_ipair p)
 {
 	/**
