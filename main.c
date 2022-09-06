@@ -29,7 +29,6 @@ int main(int argc, char** argv)
 {
 	GDS_ERROR result;
 
-	uint64_t mcount = (uint64_t)10E+6;
 
 	// Pointer to the GDS database object
 	gds_db* db = NULL;
@@ -51,7 +50,11 @@ int main(int argc, char** argv)
 	parray* pset = NULL;
 	parray_create(&pset);
 
+	uint64_t mcount = (uint64_t)10E+6;
+
 	char cell[] = "NAND";
+
+	// Note: use NULL instead of bounds to collapse the entire cell
 	if ((result = gds_collapse(db, cell, bounds, mcount, pset, progress)) == GDS_SUCCESS)
 	{
 		printf("The GDS collapse of cell \"%s\" from file \"%s\" was succesful\n", cell, name);
@@ -71,13 +74,7 @@ int main(int argc, char** argv)
 	gds_db_release(db);
 
 	// Release the polygons objects in pset
-	uint64_t size = parray_size(pset);
-	for (int i = 0; i < size; i++)
-	{
-		gds_poly* p = parray_get(pset, i);
-		free(p->pairs);
-		free(p);
-	}
+	gds_polyset_release(pset);
 
 	// Release the memory occupied by pset
 	parray_release(pset);

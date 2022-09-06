@@ -27,6 +27,14 @@ typedef enum GDS_ERROR
 
 typedef struct gds_db gds_db;
 
+// A polygon structure with an 16 bit int specifying the GDS layer
+typedef struct {
+	struct gds_ipair* pairs;
+	uint16_t size;
+	uint16_t layer;
+} gds_poly;
+
+
 /**
 * Creates a gds database structure from a file
 *
@@ -74,4 +82,4 @@ int gds_poly_contains_point(struct gds_ipair* poly, int n, struct gds_ipair p);
 void gds_top_cells(struct gds_db* gds);
 
 // Special function to destroy the memory occupied by the pointers in pset
-void gds_polyset_clear(parray* pset);
+void gds_polyset_release(parray* pset);

@@ -720,7 +720,7 @@ GDS_ERROR gds_db_create(struct gds_db** db, const char* file)
 {
 	*db = malloc(sizeof(struct gds_db));
 
-	struct gds_db* gds= *db;
+	struct gds_db* gds = *db;
 
 	parray_create(&gds->cells);
 
@@ -1257,5 +1257,16 @@ void gds_top_cells(struct gds_db* gds)
 		if (!is_referenced) {
 			printf("--> %s\n", struc->strname);
 		}
+	}
+}
+
+void gds_polyset_release(parray* pset)
+{
+	uint64_t size = parray_size(pset);
+	for (int i = 0; i < size; i++)
+	{
+		gds_poly* p = parray_get(pset, i);
+		free(p->pairs);
+		free(p);
 	}
 }
