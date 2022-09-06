@@ -8,4 +8,6 @@ An example of its use is given in the `main.c` file. It's a two step process. Fi
 this structure can be use to flatten (collapse) any GDS cell contained in it and write it to an output GDS file or a pointer array of pointers
 to a polygon structures `gds_poly`.
 
+A `gds_poly` structure is just a polygon (array of int pairs) with in addition an int specifying the layer name in the GDS file.
+
 Questions: janwillembos@yahoo.com
