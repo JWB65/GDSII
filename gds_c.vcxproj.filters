@@ -15,21 +15,24 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Gds.h">
+    <ClInclude Include="gds.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Vec.h">
+    <ClInclude Include="parray.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="gpoly.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Gds.c">
+    <ClCompile Include="gds.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Vec.c">
+    <ClCompile Include="parray.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Main.c">
+    <ClCompile Include="main.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

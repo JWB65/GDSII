@@ -11,9 +11,9 @@
 *
 */
 
+#include "parray.h"
+
 #include <inttypes.h>
-#include <stdbool.h>
-#include "vec.h"
 
 typedef enum GDS_ERROR
 {
@@ -21,116 +21,23 @@ typedef enum GDS_ERROR
 	GDS_INVALID_ARGUMENT,
 	GDS_CELL_NOT_FOUND,
 	GDS_FILE_ERROR,
+	GDS_INTERUPT,
 	GDS_BB_ERROR
 } GDS_ERROR;
 
-#define MAX_STR_NAME 32
-
-struct gds_ipair {
-	int x;
-	int y;
-};
-
-struct gds_poly {
-	// special polygon structure with layer information
-
-	struct gds_ipair* pairs;
-	uint16_t size;
-	uint16_t layer;
-};
-
-struct gds_bndry {
-	// GDS BOUNDARY element
-
-	uint16_t layer;
-
-	struct gds_ipair* pairs;
-	int size;
-};
-
-struct gds_path {
-	// GDS PATH element
-
-	uint16_t layer;
-
-	struct gds_ipair* pairs;
-	int size;
-
-	// Expanded path
-	struct gds_ipair* epairs;
-	int esize;
-
-	uint16_t pathtype;
-	uint32_t width;
-};
-
-struct gds_sref {
-	// GDS SREF element
-
-	int x, y;
-
-	char sname[MAX_STR_NAME + 1];
-	
-	// Pointer to the structure referenced
-	struct gds_cell* cell;
-
-	uint16_t strans;
-	float mag, angle;
-};
-
-struct gds_aref {
-	// GDS AREF element
-
-	int32_t x1, y1, x2, y2, x3, y3;
-
-	char sname[MAX_STR_NAME + 1];
-
-	// Pointer to the structure referenced
-	struct gds_cell* cell;
-
-	int col, row;
-
-	uint16_t strans;
-	float mag, angle;
-};
-
-struct gds_cell {
-	// GDS structure (or here named "cell")
-
-	char strname[MAX_STR_NAME + 1];
-
-	vec* boundaries;
-	vec* paths;
-	vec* srefs;
-	vec* arefs;
-};
-
-struct gds_db {
-	// GDS database
-
-	vec* cells;
-
-	const char* file;
-
-	uint16_t version;
-
-	double uu_per_dbunit, meter_per_dbunit;
-
-	// UNITS record in binary form
-	uint8_t units[16];
-};
+typedef struct gds_db gds_db;
 
 /**
 * Creates a gds database structure from a file
 *
 * Return: GDS_ERROR type
 */
-GDS_ERROR gds_db_new(struct gds_db** gds, const char* file);
+GDS_ERROR gds_db_create(struct gds_db** gds, const char* file);
 
 /**
 * Destroys the memory held by the gds_database structure
 */
-void gds_db_delete(struct gds_db* gds);
+void gds_db_release(struct gds_db* gds);
 
 /**
 * Flattens the cell "cell" in gds_database structure "gds" and writes the
@@ -145,7 +52,7 @@ void gds_db_delete(struct gds_db* gds);
 *
 */
 GDS_ERROR gds_collapse(struct gds_db* gds, const char* cell, const double* bounds,
-	uint64_t max_polys, vec* pvec);
+	uint64_t max_polys, parray* pvec, int (*callback)(uint64_t, uint64_t));
 
 /**
 * Writes polyset "pset" to a GDS file
@@ -153,20 +60,18 @@ GDS_ERROR gds_collapse(struct gds_db* gds, const char* cell, const double* bound
 * Return: GDS_ERROR type
 *
 */
-GDS_ERROR gds_write(struct gds_db* gds, const char* dest, vec* pvec);
+GDS_ERROR gds_write(struct gds_db* gds, const char* dest, parray* pvec);
 
 /**
 * Checks if point @p is in polygon @poly. Polygon is closed with @n vertices.
 * The nth vertex is the same as the first.
 */
-bool gds_poly_contains_point(struct gds_ipair* poly, int n, struct gds_ipair p);
+int gds_poly_contains_point(struct gds_ipair* poly, int n, struct gds_ipair p);
 
 /**
 * Prints all top cells of a gds database structure
 */
 void gds_top_cells(struct gds_db* gds);
 
-/**
-* Deletes all polygons in pset
-*/
-void gds_polyset_delete(vec* pset);
+// Special function to destroy the memory occupied by the pointers in pset
+void gds_polyset_clear(parray* pset);

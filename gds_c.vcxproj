@@ -127,13 +127,14 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="Gds.h" />
-    <ClInclude Include="Vec.h" />
+    <ClInclude Include="gds.h" />
+    <ClInclude Include="parray.h" />
+    <ClInclude Include="gpoly.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Gds.c" />
-    <ClCompile Include="Main.c" />
-    <ClCompile Include="Vec.c" />
+    <ClCompile Include="gds.c" />
+    <ClCompile Include="main.c" />
+    <ClCompile Include="parray.c" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

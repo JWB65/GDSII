@@ -11,9 +11,19 @@
 */
 
 #include "gds.h"
+#include "gpoly.h"
+#include "parray.h"
 
 #include <stdio.h>
 #include <stdlib.h>
+
+// callback function to display progress
+int progress(uint64_t a, uint64_t b)
+{
+	printf("%d out of %d\n", (int)a, (int)b);
+
+	return 1;
+}
 
 int main(int argc, char** argv)
 {
@@ -21,45 +31,56 @@ int main(int argc, char** argv)
 
 	uint64_t mcount = (uint64_t)10E+6;
 
-	// create the gds database from the input file
-	struct gds_db* gds_db = NULL;
+	// Pointer to the GDS database object
+	gds_db* db = NULL;
 	
-	if ((result = gds_db_new(&gds_db, "NAND.gds")) == GDS_SUCCESS) {
-		printf("GDS database was succesfully created\n");
+	// Create the GDS database object from a GDS file
+	char name[] = "NAND.gds";
+	if ((result = gds_db_create(&db, name)) == GDS_SUCCESS)
+	{
+		printf("The GDS database was succesfully created from file \"%s\"\n", name);
 	} else {
-		printf("Error %d creating the GDS database\n", result);
+		printf("Error %d creating the GDS database from file \"%s\"\n", result, name);
 		return 0;
 	}
 
-	//double bounds[4] = { 28.7, 45.2, 50.0, 85.5 };
+	// Bottom left coordinates followed by width and height
 	double bounds[4] = { 28.7, 45.2, 80.0, 60.0 };
 
-	//double cut[4] = { 544.44, 40376.0, 48.0, 48.0 };
-	//double bounds[4] = { cut[0], cut[1], cut[0] + cut[2], cut[1] + cut[3] };
+	// Pointer array to polygons
+	parray* pset = NULL;
+	parray_create(&pset);
 
-	vec* pset = vec_new();
-	if ((result = gds_collapse(gds_db, "NAND", bounds, mcount, pset)) == GDS_SUCCESS) {
-		printf("gds_collapse was succesful\n");
+	char cell[] = "NAND";
+	if ((result = gds_collapse(db, cell, bounds, mcount, pset, progress)) == GDS_SUCCESS)
+	{
+		printf("The GDS collapse of cell \"%s\" from file \"%s\" was succesful\n", cell, name);
 	} else {
 		printf("Error %d found executing gds_collapse\n", result);
 	}
 
-	if ((result = gds_write(gds_db, "out.gds", pset)) == GDS_SUCCESS) {
-		printf("GDS was written succesfully\n");
+	char out[] = "out.gds";
+	if ((result = gds_write(db, out, pset)) == GDS_SUCCESS)
+	{
+		printf("The GDS database was written succesfully to file \"%s\"\n", out);
 	} else {
-		printf("Error %d found in writing to GDS file\n", result);
+		printf("Error %d found in writing to GDS file \"%s\"\n", result, out);
 	}
 
-	// delete the database
-	gds_db_delete(gds_db);
+	// Release the memory occupied by the database
+	gds_db_release(db);
 
-	// caller still needs to delete the polygon set
-	for (int i = 0; i < pset->size; i++) {
-		struct gds_poly* p = vec_get(pset, i);
+	// Release the polygons objects in pset
+	uint64_t size = parray_size(pset);
+	for (int i = 0; i < size; i++)
+	{
+		gds_poly* p = parray_get(pset, i);
 		free(p->pairs);
 		free(p);
 	}
-	vec_delete(pset);
+
+	// Release the memory occupied by pset
+	parray_release(pset);
 
 	return 0;
 }
