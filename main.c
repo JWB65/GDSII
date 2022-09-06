@@ -11,13 +11,12 @@
 */
 
 #include "gds.h"
-#include "gpoly.h"
 #include "parray.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 
-// callback function to display progress
+// Callback function called during GDS collapse to display progress
 int progress(uint64_t a, uint64_t b)
 {
 	printf("%d out of %d\n", (int)a, (int)b);
