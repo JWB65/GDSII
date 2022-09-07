@@ -129,7 +129,6 @@
   <ItemGroup>
     <ClInclude Include="gds.h" />
     <ClInclude Include="parray.h" />
-    <ClInclude Include="gpoly.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="gds.c" />

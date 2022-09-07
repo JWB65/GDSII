@@ -22,9 +22,12 @@ typedef void* HGDS;
 * structures. It contains the coordinates of the polygon vertices and the
 * layer id of the polygon in the GDS database.
 */
+typedef struct gds_ipair {
+	int x, y;
+} gds_ipair;
 
 typedef struct {
-	struct gds_ipair* pairs;
+	gds_ipair* pairs;
 	uint16_t size;
 	uint16_t layer;
 } gds_poly;

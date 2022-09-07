@@ -17,11 +17,6 @@
 
 #define GDS_MAX_STR_NAME 32
 
-struct gds_ipair {
-	int x;
-	int y;
-};
-
 struct gds_poly {
 	struct gds_ipair* pairs;
 	uint16_t size;
