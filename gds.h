@@ -1,5 +1,3 @@
-#pragma once
-
 /**
 * Copyright(c) 2022, Jan Willem Bos - janwillembos@yahoo.com
 * All rights reserved.
@@ -11,64 +9,69 @@
 *
 */
 
-#include "parray.h"
+#pragma once
 
+#include "parray.h"
 #include <inttypes.h>
 
-typedef enum GDS_ERROR
-{
-	GDS_SUCCESS = 0,
-	GDS_INVALID_ARGUMENT,
-	GDS_CELL_NOT_FOUND,
-	GDS_FILE_ERROR,
-	GDS_INTERUPT,
-	GDS_BB_ERROR
-} GDS_ERROR;
+/* Handles to a GDS database structure */
+typedef void* HGDS;
 
-typedef struct gds_db gds_db;
+/**
+* The gds_collapse function will output a pointer array of these polygon
+* structures. It contains the coordinates of the polygon vertices and the
+* layer id of the polygon in the GDS database.
+*/
 
-// A polygon structure with an 16 bit int specifying the GDS layer
 typedef struct {
 	struct gds_ipair* pairs;
 	uint16_t size;
 	uint16_t layer;
 } gds_poly;
 
-
 /**
 * Creates a gds database structure from a file
 *
-* Return: GDS_ERROR type
+* Return: GDS database handle
 */
-GDS_ERROR gds_db_create(struct gds_db** gds, const char* file);
+HGDS gds_db_create(const char* file, char* error, int elen);
 
 /**
-* Destroys the memory held by the gds_database structure
+* Destroys the memory held by the GDS database
 */
-void gds_db_release(struct gds_db* gds);
+void gds_db_release(HGDS hGds);
 
 /**
 * Flattens the cell "cell" in gds_database structure "gds" and writes the
-* output to a polygon vector "pvec"
+* output to a pointer array "pvec"
 * 
-* @bounds: boundary box (xmin, ymin, xmax, ymin) of polygons to include or
+* @bounds: boundary box (xmin, ymin, dx, dy) of polygons to include or
 *		   NULL if all polygons are to be included
 *
+* @callback: a callback function that can be used to update progress on during
+*            flattening. If it returns 1 flattening will terminate. Can be
+*            set NULL.
+* 
 * @max_polys: Max number of polygons to output (to limit memory)
 * 
-* Return: GDS_ERROR type
+* @error and @elen: char array with length for an error message if flattening
+*                   failed
+* 
+* Return: 1 (success) 0 (failure)
 *
 */
-GDS_ERROR gds_collapse(struct gds_db* gds, const char* cell, const double* bounds,
-	uint64_t max_polys, parray* pvec, int (*callback)(uint64_t, uint64_t));
+int gds_collapse(HGDS hGds, const char* cell, const double* bounds,
+	uint64_t max_polys, parray* pvec, int (*callback)(uint64_t, uint64_t), char* error, int elen);
 
 /**
 * Writes polyset "pset" to a GDS file
-*
-* Return: GDS_ERROR type
+* 
+* * @error and @elen: char array with length for an error message if flattening
+*                   failed
+* Return: 1 (success) 0 (failure)
 *
 */
-GDS_ERROR gds_write(struct gds_db* gds, const char* dest, parray* pvec);
+int gds_write(HGDS hGds, const char* dest, parray* pvec, char* error, int elen);
 
 /**
 * Checks if point @p is in polygon @poly. Polygon is closed with @n vertices.
@@ -77,9 +80,16 @@ GDS_ERROR gds_write(struct gds_db* gds, const char* dest, parray* pvec);
 int gds_poly_contains_point(struct gds_ipair* poly, int n, struct gds_ipair p);
 
 /**
-* Prints all top cells of a gds database structure
+* Prints all top cells of the gds database structure
 */
-void gds_top_cells(struct gds_db* gds);
+void gds_top_cells(HGDS hGds);
 
-// Special function to destroy the memory occupied by the pointers in pset
+/**
+* Prints all cells of the gds database structure
+*/
+void gds_all_cells(HGDS hGds);
+
+/**
+* Support function to destroy all polygons pointed to by pointer array pset
+**/
 void gds_polyset_release(parray* pset);

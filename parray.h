@@ -1,5 +1,3 @@
-#pragma once
-
 /**
 * Copyright(c) 2022, Jan Willem Bos - janwillembos@yahoo.com
 * All rights reserved.
@@ -12,13 +10,13 @@
 *
 */
 
-// A dynamic array of void pointers
+#pragma once
 
 #include <inttypes.h>
 
 typedef struct parray parray;
 
-void parray_create(parray** v);
+parray* parray_create(void);
 
 void parray_release(parray* v);
 

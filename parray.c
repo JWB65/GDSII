@@ -8,7 +8,6 @@
 
 #include "parray.h"
 
-#include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -20,12 +19,15 @@ typedef struct parray {
 
 #define VEC_INITIAL_CAPACITY 4
 
-void parray_create(parray** v)
+parray* parray_create(void)
 {
-    *v = malloc(sizeof(parray));
-    (*v)->capacity = VEC_INITIAL_CAPACITY;
-    (*v)->size = 0;
-    (*v)->parray = calloc(1, sizeof(void*) * (*v)->capacity);
+    parray *v = malloc(sizeof(parray));
+
+    v->capacity = VEC_INITIAL_CAPACITY;
+    v->size = 0;
+    v->parray = calloc(1, sizeof(void*) * v->capacity);
+
+    return v;
 }
 
 static void parray_resize(parray* v, uint64_t capacity)
