@@ -110,7 +110,6 @@ struct gds_db {
 	uint8_t units[16];
 } gds_db;
 
-//#define GDS_TRANSLATE
 enum GDS_RECORD {
 	GDS_HEADER = 0x0002,
 	GDS_BGNLIB = 0x0102,
@@ -176,8 +175,9 @@ struct bb {
 	int32_t ymax;
 };
 
-// Data to pass during recursion
-struct rinfo {
+// File global variable with information that otherwise needed to be passed
+// during recursion
+static struct rinfo {
 	parray* out_pset;
 	struct gds_db* gds;
 	struct bb bb;
@@ -253,7 +253,6 @@ static struct gds_cell* find_struct(struct gds_db* gds, char* name)
 
 	return NULL;
 }
-
 
 // Appends generic GDS record to file
 static void file_append_record(FILE* file, uint16_t record)
@@ -342,7 +341,6 @@ static void file_append_poly(FILE* pfile, struct gds_ipair* p, int size, uint16_
 	free(buf);
 }
 
-
 // Append polygon to polygon set
 static void polyset_add_poly(parray* pset, struct gds_ipair* in, int size, uint16_t layer)
 {
@@ -361,7 +359,6 @@ static void polyset_add_poly(parray* pset, struct gds_ipair* in, int size, uint1
 
 	parray_add(pset, poly);
 }
-
 
 // Intersection between two lines in the standard form
 static struct gds_ipair line_intersection(struct gds_line* one, struct gds_line* two)
@@ -412,13 +409,15 @@ static struct gds_ipair extend_vector(struct gds_ipair tail, struct gds_ipair he
 	return out;
 }
 
+// Sums two pairs
 static struct gds_ipair vec_sum(struct gds_ipair one, struct gds_ipair two)
 {
 	return (struct gds_ipair) { one.x + two.x, one.y + two.y };
 }
 
-
-static void expand_path(struct gds_ipair* pout, struct gds_ipair* pin, int size, int width, int pathtype)
+// Expands a GDS path into a simple polygon
+static void expand_path(struct gds_ipair* pout, struct gds_ipair* pin, int size, int width,
+	int pathtype)
 {
 	int i;
 	double hwidth = width / 2.0;
@@ -1110,8 +1109,8 @@ void gds_db_release(HGDS hGds)
 	free(gds);
 }
 
-int gds_collapse(HGDS hGds, const char* cell, const double* bounds,
-	uint64_t max_polys, parray* pvec, int (*callback)(uint64_t, uint64_t), char* error, int elen)
+int gds_collapse(HGDS hGds, const char* cell, const double* bounds, uint64_t max_polys,
+	parray* pvec, int (*callback)(uint64_t, uint64_t), char* error, int elen)
 {
 	memset(&g_info, 0, sizeof(g_info));
 
@@ -1155,7 +1154,8 @@ int gds_collapse(HGDS hGds, const char* cell, const double* bounds,
 	}
 
 	// Initial transformation of top level cell
-	struct gds_trans trans = (struct gds_trans){ .x = 0, .y = 0, .mag = 1.0, .angle = 0.0, .mirror = 0 };
+	struct gds_trans trans = (struct gds_trans){ .x = 0, .y = 0, .mag = 1.0, .angle = 0.0,
+		.mirror = 0 };
 
 	// start the recursion
 	collapse_cell(top, trans);
