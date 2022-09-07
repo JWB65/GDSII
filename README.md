@@ -2,11 +2,23 @@
 
 Code to extract polygons from any cell, or region in the cell, contained in an GDSII file.
 
-Read a GDSII file and collapse/flatten the hierarchy of any cell contained in it to a pointer array of simple polygons of type `gds_poly`.
+Read a GDSII file and collapse/flatten the hierarchy of any cell contained in it to a pointer array of simple polygons of type `gds_poly`:
+
+```
+typedef struct gds_ipair {
+	int x, y;
+} gds_ipair;
+
+typedef struct {
+	gds_ipair* pairs;
+	uint16_t size;
+	uint16_t layer;
+} gds_poly;
+```
 
 The polygons can be written to a new output GDSII file.
 
-An example of its use is given in the `main.c` and `gds.h` files.
+An example of its use is given in the `main.c` and the `gds.h` gives further information on the use of each function.
 
 No dependencies except the standard library. Include
 ```
