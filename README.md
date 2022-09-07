@@ -17,4 +17,6 @@ parray.h
 ```
 to integrate it in your code.
 
+`nand.gds` is an example gds file with `out.gds` the output from the example.
+
 Questions: janwillembos@yahoo.com
