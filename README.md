@@ -15,10 +15,11 @@ typedef struct {
 	uint16_t layer;
 } gds_poly;
 ```
+The `layer` member of the structure identifies the GDS layer number the polygon belongs to.
 
 The polygons can be written to a new output GDSII file.
 
-An example of its use is given in the `main.c` and the `gds.h` gives further information on the use of each function.
+An example of its use is given in the `main.c` and the `gds.h` header gives further information on the use of each function.
 
 No dependencies except the standard library. Include
 ```
