@@ -14,19 +14,22 @@
 #include "parray.h"
 #include <inttypes.h>
 
+/* Maximum number of characters of a cell name */
+#define GDS_MAX_STR_NAME 127
+
 /* Handles to a GDS database structure */
 typedef void* HGDS;
+
+typedef struct gds_ipair {
+	int x, y;
+} gds_ipair;
 
 /**
 * The gds_collapse function will output a pointer array of these polygon
 * structures. It contains the coordinates of the polygon vertices and the
 * layer id of the polygon in the GDS database.
 */
-typedef struct gds_ipair {
-	int x, y;
-} gds_ipair;
-
-typedef struct {
+typedef struct gds_poly {
 	gds_ipair* pairs;
 	uint16_t size;
 	uint16_t layer;
@@ -63,8 +66,8 @@ void gds_db_release(HGDS hGds);
 * Return: 1 (success) 0 (failure)
 *
 */
-int gds_collapse(HGDS hGds, const char* cell, const double* bounds,
-	uint64_t max_polys, parray* pvec, int (*callback)(uint64_t, uint64_t), char* error, int elen);
+int gds_collapse(HGDS hGds, const char* cell, const double* bounds, uint64_t max_polys,
+	parray* pvec, int (*callback)(uint64_t, uint64_t), char* error, int elen);
 
 /**
 * Writes polyset "pset" to a GDS file
@@ -96,3 +99,9 @@ void gds_all_cells(HGDS hGds);
 * Support function to destroy all polygons pointed to by pointer array pset
 **/
 void gds_polyset_release(parray* pset);
+
+/* Retrieve the GDS file path from the GDS object */
+char* gds_getfile(HGDS hGds);
+
+/* Retrieve the size of the db unit in user units */
+float gds_getuu(HGDS hGds);

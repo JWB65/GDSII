@@ -15,14 +15,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define GDS_MAX_STR_NAME 32
-
-struct gds_poly {
-	struct gds_ipair* pairs;
-	uint16_t size;
-	uint16_t layer;
-};
-
 struct gds_bndry {
 	// GDS BOUNDARY element
 
@@ -56,7 +48,7 @@ struct gds_sref {
 	char sname[GDS_MAX_STR_NAME + 1];
 
 	// Pointer to the structure referenced
-	struct gds_cell* cell;
+	struct gcell* cell;
 
 	uint16_t strans;
 	float mag, angle;
@@ -70,7 +62,7 @@ struct gds_aref {
 	char sname[GDS_MAX_STR_NAME + 1];
 
 	// Pointer to the structure referenced
-	struct gds_cell* cell;
+	struct gcell* cell;
 
 	int col, row;
 
@@ -78,7 +70,7 @@ struct gds_aref {
 	float mag, angle;
 };
 
-struct gds_cell {
+struct gcell {
 	// GDS structure (or here named "cell")
 
 	char strname[GDS_MAX_STR_NAME + 1];
@@ -99,6 +91,9 @@ struct gds_db {
 
 	uint16_t version;
 
+	// Size of db unit in user units
+	// Size of db unit in meter
+	// (1) / (2) is the size of the user unit in meters
 	double uu_per_dbunit, meter_per_dbunit;
 
 	// UNITS record in binary form
@@ -232,14 +227,14 @@ static void buf_write_int(char* p, int offset, int n)
 }
 
 // Find cell with name @name in @gds
-static struct gds_cell* find_struct(struct gds_db* gds, char* name)
+static struct gcell* find_struct(struct gds_db* gds, char* name)
 {
 	uint64_t i;
 
 	uint64_t size = parray_size(gds->cells);
 	for (i = 0; i < size; i++)
 	{
-		struct gds_cell* s;
+		struct gcell* s;
 
 		s = parray_get(gds->cells, i);
 		if (strcmp(s->strname, name) == 0)
@@ -574,7 +569,7 @@ static struct gds_ipair transform_point(struct gds_ipair in, struct gds_trans tr
 }
 
 // Collapse cell
-static void collapse_cell(struct gds_cell* top, struct gds_trans tra)
+static void collapse_cell(struct gcell* top, struct gds_trans tra)
 {
 	struct gds_ipair out[400];
 
@@ -618,7 +613,7 @@ static void collapse_cell(struct gds_cell* top, struct gds_trans tra)
 			if (!p->cell) continue;
 		}
 
-		struct gds_cell* str = p->cell;
+		struct gcell* str = p->cell;
 
 		// Calculate the origin of the sub cell with the accumulated transformation
 		struct gds_ipair ori;
@@ -653,7 +648,7 @@ static void collapse_cell(struct gds_cell* top, struct gds_trans tra)
 			if (!p->cell) continue;
 		}
 
-		struct gds_cell* str = p->cell;
+		struct gcell* str = p->cell;
 
 		// (v_col_x, v_col_y) vector in column direction
 		float v_col_x = ((float)(p->x2 - p->x1)) / p->col;
@@ -706,7 +701,7 @@ static void collapse_cell(struct gds_cell* top, struct gds_trans tra)
 }
 
 // Free memory allocated in GDS structure @s
-static void gds_cell_clear(struct gds_cell* s)
+static void gds_cell_clear(struct gcell* s)
 {
 	uint64_t i;
 
@@ -738,6 +733,8 @@ static void gds_cell_clear(struct gds_cell* s)
 	parray_release(s->paths);
 }
 
+// User functions
+
 HGDS gds_db_create(const char* file, char* error, int elen)
 {
 	struct gds_db* gds = malloc(sizeof(struct gds_db));
@@ -745,7 +742,7 @@ HGDS gds_db_create(const char* file, char* error, int elen)
 	gds->cells = parray_create();
 
 	// current GDS structure being read
-	struct gds_cell* cur_str = NULL;
+	struct gcell* cur_str = NULL;
 
 	// the different elements in a GDS structure
 	struct gds_bndry* cur_boundary = NULL;
@@ -808,7 +805,7 @@ HGDS gds_db_create(const char* file, char* error, int elen)
 		case GDS_BGNSTR:
 			scount++;
 
-			cur_str = calloc(1, sizeof(struct gds_cell));
+			cur_str = calloc(1, sizeof(struct gcell));
 
 			cur_str->boundaries = parray_create();
 			cur_str->paths = parray_create();
@@ -833,8 +830,8 @@ HGDS gds_db_create(const char* file, char* error, int elen)
 			}
 		case GDS_STRNAME:
 			{
-				memcpy_s(cur_str->strname, GDS_MAX_STR_NAME, buf, buf_size);
-				cur_str->strname[buf_size] = 0;
+				// strname is already filled with zeros
+				memcpy_s(cur_str->strname, GDS_MAX_STR_NAME + 1, buf, buf_size);
 
 				break;
 			}
@@ -893,10 +890,10 @@ HGDS gds_db_create(const char* file, char* error, int elen)
 
 			if (cur_sref)
 			{
-				memcpy_s(cur_sref->sname, GDS_MAX_STR_NAME, buf, buf_size);
+				memcpy_s(cur_sref->sname, GDS_MAX_STR_NAME + 1, buf, buf_size);
 				cur_sref->sname[buf_size] = 0;
 			} else if (cur_aref) {
-				memcpy_s(cur_aref->sname, GDS_MAX_STR_NAME, buf, buf_size);
+				memcpy_s(cur_aref->sname, GDS_MAX_STR_NAME + 1, buf, buf_size);
 				cur_aref->sname[buf_size] = 0;
 			}
 
@@ -1065,7 +1062,7 @@ HGDS gds_db_create(const char* file, char* error, int elen)
 	uint64_t cells_size = parray_size(gds->cells);
 	for (int i = 0; i < cells_size; i++)
 	{
-		struct gds_cell* cell = parray_get(gds->cells, i);
+		struct gcell* cell = parray_get(gds->cells, i);
 
 		uint64_t size = parray_size(cell->paths);
 		for (int j = 0; j < size; j++)
@@ -1093,7 +1090,7 @@ void gds_db_release(HGDS hGds)
 	uint64_t size = parray_size(gds->cells);
 	for (i = 0; i < size; i++)
 	{
-		struct gds_cell* cell = parray_get(gds->cells, i);
+		struct gcell* cell = parray_get(gds->cells, i);
 		gds_cell_clear(cell);
 		free(cell);
 	}
@@ -1141,7 +1138,7 @@ int gds_collapse(HGDS hGds, const char* cell, const double* bounds, uint64_t max
 	}
 
 	// Find the gds structure to expand
-	struct gds_cell* top = find_struct(gds, (char*)cell);
+	struct gcell* top = find_struct(gds, (char*)cell);
 	if (top == NULL)
 	{
 		snprintf(error, elen, "GDS cell %s not found", cell);
@@ -1253,7 +1250,7 @@ void gds_top_cells(HGDS hGds)
 	printf("\nTop cell in: %s\n", gds->file);
 
 	for (i = 0; i < count; i++) {
-		struct gds_cell* struc = parray_get(gds->cells, i);
+		struct gcell* struc = parray_get(gds->cells, i);
 
 		int is_referenced = 0;
 
@@ -1263,7 +1260,7 @@ void gds_top_cells(HGDS hGds)
 
 			if (i == j) continue; // skip self
 
-			struct gds_cell* test_struct = parray_get(gds->cells, j);
+			struct gcell* test_struct = parray_get(gds->cells, j);
 
 			ref_count = parray_size(test_struct->srefs);
 			for (int k = 0; k < ref_count; k++) {
@@ -1309,7 +1306,7 @@ void gds_all_cells(HGDS hGds)
 
 	for (i = 0; i < count; i++)
 	{
-		struct gds_cell* struc = parray_get(gds->cells, i);
+		struct gcell* struc = parray_get(gds->cells, i);
 		printf("--> %s\n", struc->strname);
 	}
 
@@ -1325,4 +1322,18 @@ void gds_polyset_release(parray* pset)
 		free(p->pairs);
 		free(p);
 	}
+}
+
+char* gds_getfile(HGDS hGds)
+{
+	struct gds_db* gds = (struct gds_db*)hGds;
+
+	return gds->file;
+}
+
+float gds_getuu(HGDS hGds)
+{
+	struct gds_db* gds = (struct gds_db*)hGds;
+
+	return (float) gds->uu_per_dbunit;
 }
