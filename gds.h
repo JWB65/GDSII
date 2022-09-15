@@ -1,13 +1,14 @@
 /**
-* Copyright(c) 2022, Jan Willem Bos - janwillembos@yahoo.com
-* All rights reserved.
-*
-* This source code is licensed under the BSD - style license found in the
-* LICENSE file in the root directory of this source tree.
-*
-* Process module to work with GDSII file
-*
-*/
+ * 
+ * Copyright(c) 2022, Jan Willem Bos - janwillembos@yahoo.com
+ * All rights reserved.
+ *
+ * This source code is licensed under the BSD - style license found in the
+ * LICENSE file in the root directory of this source tree.
+ *
+ * Process module to work with GDSII file
+ *
+ */
 
 #pragma once
 
@@ -17,18 +18,14 @@
 /* Maximum number of characters of a cell name */
 #define GDS_MAX_STR_NAME 127
 
-/* Handles to a GDS database structure */
+/* Handle to a GDS database structure */
 typedef void* HGDS;
 
+/* The gds_poly structure */
 typedef struct gds_ipair {
 	int x, y;
 } gds_ipair;
 
-/**
-* The gds_collapse function will output a pointer array of these polygon
-* structures. It contains the coordinates of the polygon vertices and the
-* layer id of the polygon in the GDS database.
-*/
 typedef struct gds_poly {
 	gds_ipair* pairs;
 	uint16_t size;
@@ -36,14 +33,16 @@ typedef struct gds_poly {
 } gds_poly;
 
 /**
-* Creates a gds database structure from a file
-*
-* Return: GDS database handle
-*/
+ * Creates a gds database structure from a file
+ * 
+ * @error and @elen: char array with a max length for an error message
+ *
+ * Return: GDS database handle
+ */
 HGDS gds_db_create(const char* file, char* error, int elen);
 
 /**
-* Destroys the memory held by the GDS database
+* Destroys the memory held by the GDS database handle
 */
 void gds_db_release(HGDS hGds);
 
@@ -60,7 +59,7 @@ void gds_db_release(HGDS hGds);
 * 
 * @max_polys: Max number of polygons to output (to limit memory)
 * 
-* @error and @elen: char array with length for an error message if flattening
+* @error and @elen: char array with max length for an error message if flattening
 *                   failed
 * 
 * Return: 1 (success) 0 (failure)
@@ -72,8 +71,9 @@ int gds_collapse(HGDS hGds, const char* cell, const double* bounds, uint64_t max
 /**
 * Writes polyset "pset" to a GDS file
 * 
-* * @error and @elen: char array with length for an error message if flattening
-*                   failed
+* @error and @elen: char array with max length for an error message if there
+*					was a failure
+* 
 * Return: 1 (success) 0 (failure)
 *
 */
