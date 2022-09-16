@@ -1,10 +1,10 @@
 # gds_c
 
-A simple library for work on a GDS II files used in the semiconductor industry.
+A simple library for reading and extracting polygons from a GDS II layout files used in the semiconductor industry.
 
 # Features
 
-* Extract polygons from a GDS II cell to a pointer array of polygon structures described below. The user of the library can use this pointer array for further work.
+* Extract polygons from a GDS II cell to a pointer array of custom polygon structures described below. The user of the library can use this pointer array for further programming work.
 * Write a the polygons in this pointer array to a newly created GDS II file.
 
 # How to add the library to your project
@@ -20,15 +20,15 @@ to integrate it in your code.
 
 # Instructions to use
 
-* Create a handle to a GDS II database with `HGDS hGds = gds_db_create(name, error, 256);`
+* Create a handle to a GDS II database with `HGDS hGds = gds_db_create(name, error, 256)`
 
-* Create and empty generic pointer array by `parray* pset = parray_create();`
+* Create an empty pointer array by `parray* pset = parray_create()`.
 
 * Read in the polygons of a given cell into the pointer array by `gds_collapse(hGds, cell, bounds, mcount, pset, NULL, error, 256);`
 
 * Create a new GDS II file with these polygons with `gds_write(hGds, out, pset, error, 256);`
 
-* The function `gds_polyset_release(pset);` can be used to release all memory allocated by the pointer array to polygons.
+* The function `gds_polyset_release(pset)` can be used to release all memory allocated by the pointer array to polygons.
 
 
 * An example of its use is given in the `main.c` and the `gds.h` header gives further information on the use of each function.
