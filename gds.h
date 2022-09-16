@@ -1,13 +1,29 @@
-/**
+/*
+ * Copyright (c) 2022 Jan Willem Bos - janwillembos@yahoo.com
  * 
- * Copyright(c) 2022, Jan Willem Bos - janwillembos@yahoo.com
- * All rights reserved.
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met :
  *
- * This source code is licensed under the BSD - style license found in the
- * LICENSE file in the root directory of this source tree.
- *
- * Process module to work with GDSII file
- *
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and /or other materials provided with the distribution.
+ * 3. Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived from this
+ *	  software without specific prior written permission.
+ * 
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
  */
 
 #pragma once
@@ -15,13 +31,17 @@
 #include "parray.h"
 #include <inttypes.h>
 
-/* Maximum number of characters of a cell name */
+/* Maximum number of characters in a cell name */
 #define GDS_MAX_STR_NAME 127
 
-/* Handle to a GDS database structure */
+/* Opaque handle to the GDS database structure */
 typedef void* HGDS;
 
-/* The gds_poly structure */
+/* 
+ * The user of the library needs to define a pointer array of gds_poly
+ * structures defined below.
+ */
+
 typedef struct gds_ipair {
 	int x, y;
 } gds_ipair;
@@ -32,72 +52,70 @@ typedef struct gds_poly {
 	uint16_t layer;
 } gds_poly;
 
-/**
+/*
  * Creates a gds database structure from a file
  * 
  * @error and @elen: char array with a max length for an error message
  *
- * Return: GDS database handle
+ * Return: GDS database handle or NULL if failed
  */
 HGDS gds_db_create(const char* file, char* error, int elen);
 
-/**
-* Destroys the memory held by the GDS database handle
-*/
+/*
+ * Releases the memory held by the GDS database handle
+ */
 void gds_db_release(HGDS hGds);
 
-/**
-* Flattens the cell "cell" in gds_database structure "gds" and writes the
-* output to a pointer array "pvec"
-* 
-* @bounds: boundary box (xmin, ymin, dx, dy) of polygons to include or
-*		   NULL if all polygons are to be included
-*
-* @callback: a callback function that can be used to update progress on during
-*            flattening. If it returns 1 flattening will terminate. Can be
-*            set NULL.
-* 
-* @max_polys: Max number of polygons to output (to limit memory)
-* 
-* @error and @elen: char array with max length for an error message if flattening
-*                   failed
-* 
-* Return: 1 (success) 0 (failure)
-*
-*/
+/*
+ * Flattens the cell "cell" in gds_database structure "gds" and writes the
+ * output to a pointer array "pvec"
+ * 
+ * @bounds: boundary box (xmin, ymin, dx, dy) of polygons to include or
+ *		   NULL if all polygons are to be included
+ *
+ * @callback: a callback function that can be used to update progress on during
+ *            flattening. If it returns 1 flattening will terminate. Can be
+ *            set NULL.
+ * 
+ * @max_polys: Max number of polygons to output (to limit memory)
+ * 
+ * @error and @elen: char array with max length for an error message if flattening
+ *                   failed
+ * 
+ * Return: 1 (success) 0 (failure)
+ */
 int gds_collapse(HGDS hGds, const char* cell, const double* bounds, uint64_t max_polys,
 	parray* pvec, int (*callback)(uint64_t, uint64_t), char* error, int elen);
 
-/**
-* Writes polyset "pset" to a GDS file
-* 
-* @error and @elen: char array with max length for an error message if there
-*					was a failure
-* 
-* Return: 1 (success) 0 (failure)
-*
-*/
+/*
+ * Writes polyset "pset" to a GDS file
+ * 
+ * @error and @elen: char array with max length for an error message if there
+ *					was a failure
+ * 
+ * Return: 1 (success) 0 (failure)
+ */
 int gds_write(HGDS hGds, const char* dest, parray* pvec, char* error, int elen);
 
-/**
-* Checks if point @p is in polygon @poly. Polygon is closed with @n vertices.
-* The nth vertex is the same as the first.
-*/
+/*
+ * Checks if point @p is in polygon @poly. Polygon is closed with @n vertices.
+ * The nth vertex is the same as the first.
+ */
 int gds_poly_contains_point(struct gds_ipair* poly, int n, struct gds_ipair p);
 
-/**
-* Prints all top cells of the gds database structure
-*/
+/*
+ * Prints all top cells of the gds database structure
+ */
 void gds_top_cells(HGDS hGds);
 
-/**
-* Prints all cells of the gds database structure
-*/
+/*
+ * Prints all cells of the gds database structure
+ */
 void gds_all_cells(HGDS hGds);
 
-/**
-* Support function to destroy all polygons pointed to by pointer array pset
-**/
+/*
+ * Support function to destroy all polygons pointed to by pointer array pset
+ */
 void gds_polyset_release(parray* pset);
 
 /* Retrieve the GDS file path from the GDS object */

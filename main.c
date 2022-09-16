@@ -1,15 +1,3 @@
-/**
-* Copyright(c) 2022, Jan Willem Bos - janwillembos@yahoo.com
-* All rights reserved.
-*
-* This source code is licensed under the BSD - style license found in the
-* LICENSE file in the root directory of this source tree.
-*
-* Collapses the hierarchy in a cell in a GDS file and writes to an output GDS
-* file with only polygons (BOUNDARY elements)
-*
-*/
-
 #include "gds.h"
 #include "parray.h"
 
