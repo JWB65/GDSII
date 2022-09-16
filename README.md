@@ -28,6 +28,9 @@ to integrate it in your code.
 
 * Create a new GDS II file with these polygons with `gds_write(hGds, out, pset, error, 256);`
 
+* The function `gds_polyset_release(pset);` can be used to release all memory allocated by the pointer array to polygons.
+
+
 * An example of its use is given in the `main.c` and the `gds.h` header gives further information on the use of each function.
 
 # The polygon structure
