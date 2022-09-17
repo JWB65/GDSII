@@ -52,6 +52,6 @@ The `layer` member of the structure identifies the GDS layer number the polygon 
 
 # Example GDS II file
 
-`nand.gds` is an example gds file with `out.gds` the output from the example.
+The file `main.c` contains and example use of the library. The file `nand.gds` is the example GDS II file used in it.
 
 Questions: janwillembos@yahoo.com
