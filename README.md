@@ -38,20 +38,20 @@ to integrate it in your code.
 The polygon structure `gds_poly` is just an array of pairs with an integer specifying the layer number in the GDS II database.
 
 ```
-typedef struct gds_ipair {
+typedef struct {
 	int x, y;
-} gds_ipair;
+} gds_ipair_t;
 
 typedef struct {
 	gds_ipair* pairs;
 	uint16_t size;
 	uint16_t layer;
-} gds_poly;
+} gds_poly_t;
 ```
 The `layer` member of the structure identifies the GDS layer number the polygon belongs to.
 
 # Example GDS II file
 
-`nand.gds` is an example gds file with `out.gds` the output from the example.
+The file `main.c` contains and example use of the library. The file `nand.gds` is the example GDS II file used in it.
 
 Questions: janwillembos@yahoo.com
