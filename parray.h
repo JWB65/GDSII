@@ -26,18 +26,31 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+ /*
+  *
+  * A simple generic dynamic pointer array which can be used to store and access
+  * general objects. Not responsible for allocating and freeing memory to the
+  * pointers.
+  *
+  */
+
 #pragma once
 
 #include <inttypes.h>
 
 typedef struct parray parray;
 
+/* Create and empty pointer array */
 parray* parray_create(void);
 
+/* Release the pointer array */
 void parray_release(parray* v);
 
+/* Add pointer */
 void parray_add(parray*, void*);
 
+/* Get pointer with index */
 void* parray_get(parray*, uint64_t);
 
+/* Get the size of the pointer array */
 uint64_t parray_size(parray*);

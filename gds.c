@@ -40,7 +40,7 @@ struct gds_bndry {
 
 	uint16_t layer;
 
-	struct gds_ipair* pairs;
+	gds_ipair_t* pairs;
 	int size;
 };
 
@@ -49,11 +49,11 @@ struct gds_path {
 
 	uint16_t layer;
 
-	struct gds_ipair* pairs;
+	gds_ipair_t* pairs;
 	int size;
 
 	// Expanded path
-	struct gds_ipair* epairs;
+	gds_ipair_t* epairs;
 	int esize;
 
 	uint16_t pathtype;
@@ -102,8 +102,6 @@ struct gcell {
 };
 
 struct gds_db {
-	// GDS database
-
 	parray* cells;
 
 	char* file;
@@ -113,12 +111,11 @@ struct gds_db {
 
 	// Size of db unit in user units
 	// Size of db unit in meter
-	// (1) / (2) is the size of the user unit in meters
 	double uu_per_dbunit, meter_per_dbunit;
 
 	// UNITS record in binary form
 	uint8_t units[16];
-} gds_db;
+};
 
 enum GDS_RECORD {
 	GDS_HEADER = 0x0002,
@@ -328,8 +325,8 @@ static void file_append_string(FILE* file, uint16_t record, char* string)
 	if (text_len % 2) putc(0, file);
 }
 
-// Append polygon to GDS file
-static void file_append_poly(FILE* pfile, struct gds_ipair* p, int size, uint16_t layer)
+// Append polygon to file
+static void file_append_poly(FILE* pfile, gds_ipair_t* p, int size, uint16_t layer)
 {
 	// store in buffer in the format of the gds standard
 	char* buf = malloc(8 * size * sizeof(char));
@@ -352,17 +349,17 @@ static void file_append_poly(FILE* pfile, struct gds_ipair* p, int size, uint16_
 }
 
 // Append polygon to polygon set
-static void polyset_add_poly(parray* pset, struct gds_ipair* in, int size, uint16_t layer)
+static void polyset_add_poly(parray* pset, gds_ipair_t* in, int size, uint16_t layer)
 {
 	if (in == NULL || pset == NULL)
 		return;
 
 	// Copy input polygon
-	struct gds_ipair* pnew = malloc(size * sizeof(struct gds_ipair));
-	memcpy(pnew, &in[0], size * sizeof(struct gds_ipair));
+	gds_ipair_t* pnew = malloc(size * sizeof(gds_ipair_t));
+	memcpy(pnew, &in[0], size * sizeof(gds_ipair_t));
 
 	// Add to the polygon structure with the layer name
-	struct gds_poly* poly = malloc(sizeof(struct gds_poly));
+	gds_poly_t* poly = malloc(sizeof(gds_poly_t));
 	poly->pairs = pnew;
 	poly->size = (uint16_t)size;
 	poly->layer = layer;
@@ -371,7 +368,7 @@ static void polyset_add_poly(parray* pset, struct gds_ipair* in, int size, uint1
 }
 
 // Intersection between two lines in the standard form
-static struct gds_ipair line_intersection(struct gds_line* one, struct gds_line* two)
+static gds_ipair_t line_intersection(struct gds_line* one, struct gds_line* two)
 {
 	double xh, yh, wh;
 
@@ -381,11 +378,11 @@ static struct gds_ipair line_intersection(struct gds_line* one, struct gds_line*
 	yh = two->a * one->c - one->a * two->c;
 	wh = one->a * two->b - two->a * one->b;
 
-	return (struct gds_ipair) { (int)(xh / wh), (int)(yh / wh) };
+	return (gds_ipair_t) { (int)(xh / wh), (int)(yh / wh) };
 }
 
 // Project a point onto a line
-static struct gds_ipair line_project(struct gds_ipair p, struct gds_line* line)
+static gds_ipair_t line_project(gds_ipair_t p, struct gds_line* line)
 {
 	struct gds_line normal;
 
@@ -401,10 +398,10 @@ static struct gds_ipair line_project(struct gds_ipair p, struct gds_line* line)
 }
 
 // Extends a vector given by @tail and @head in the tail direction by @length
-static struct gds_ipair extend_vector(struct gds_ipair tail, struct gds_ipair head, double length)
+static gds_ipair_t extend_vector(gds_ipair_t tail, gds_ipair_t head, double length)
 {
 	double segx, segy, norm;
-	struct gds_ipair out = { tail.x, tail.y };
+	gds_ipair_t out = { tail.x, tail.y };
 
 	segx = tail.x - head.x;
 	segy = tail.y - head.y;
@@ -420,19 +417,19 @@ static struct gds_ipair extend_vector(struct gds_ipair tail, struct gds_ipair he
 }
 
 // Sums two pairs
-static struct gds_ipair vec_sum(struct gds_ipair one, struct gds_ipair two)
+static gds_ipair_t vec_sum(gds_ipair_t one, gds_ipair_t two)
 {
-	return (struct gds_ipair) { one.x + two.x, one.y + two.y };
+	return (gds_ipair_t) { one.x + two.x, one.y + two.y };
 }
 
 // Expands a GDS path into a simple polygon
-static void expand_path(struct gds_ipair* pout, struct gds_ipair* pin, int size, int width,
+static void expand_path(gds_ipair_t* pout, gds_ipair_t* pin, int size, int width,
 	int pathtype)
 {
 	int i;
 	double hwidth = width / 2.0;
 	struct gds_line* mlines, * plines;
-	struct gds_ipair end_point;
+	gds_ipair_t end_point;
 
 	if (size < 2) return;
 
@@ -493,7 +490,7 @@ static void expand_path(struct gds_ipair* pout, struct gds_ipair* pin, int size,
 }
 
 // Cursory test if poly overlaps with bounding box in global g_info structure
-static int poly_overlap_test(struct gds_ipair* p, int size)
+static int poly_overlap_test(gds_ipair_t* p, int size)
 {
 	// Returns false if certainly no overlap
 
@@ -525,7 +522,7 @@ static int poly_overlap_test(struct gds_ipair* p, int size)
 }
 
 // Add polygon to the file and/or polygon set
-static void add_poly(struct gds_ipair* pairs, int size, uint16_t layer)
+static void add_poly(gds_ipair_t* pairs, int size, uint16_t layer)
 {
 	g_info.scount++;
 
@@ -553,7 +550,7 @@ static void add_poly(struct gds_ipair* pairs, int size, uint16_t layer)
 }
 
 // Perform a transformation: reflection -> rotation -> scaling -> translation
-static void transform_poly(struct gds_ipair* pout, struct gds_ipair* pin, int size,
+static void transform_poly(gds_ipair_t* pout, gds_ipair_t* pin, int size,
 	struct gds_trans tra)
 {
 	// Reflect with respect to x axis before rotation
@@ -571,7 +568,7 @@ static void transform_poly(struct gds_ipair* pout, struct gds_ipair* pin, int si
 }
 
 // Perform a transformation: reflection -> rotation -> scaling -> translation
-static struct gds_ipair transform_point(struct gds_ipair in, struct gds_trans tra)
+static gds_ipair_t transform_point(gds_ipair_t in, struct gds_trans tra)
 {
 	// Reflect with respect to x axis before rotation
 	float sign = 1.f;
@@ -581,7 +578,7 @@ static struct gds_ipair transform_point(struct gds_ipair in, struct gds_trans tr
 	float s = sinf(tra.angle);
 	float c = cosf(tra.angle);
 
-	struct gds_ipair out;
+	gds_ipair_t out;
 	out.x = (int)(tra.x + tra.mag * (in.x * c - sign * in.y * s));
 	out.y = (int)(tra.y + tra.mag * (in.x * s + sign * in.y * c));
 
@@ -591,7 +588,7 @@ static struct gds_ipair transform_point(struct gds_ipair in, struct gds_trans tr
 // Collapse cell
 static void collapse_cell(struct gcell* top, struct gds_trans tra)
 {
-	struct gds_ipair out[400];
+	gds_ipair_t out[400];
 
 	if (g_info.pcount >= g_info.max_polys)
 		return;
@@ -636,8 +633,8 @@ static void collapse_cell(struct gcell* top, struct gds_trans tra)
 		struct gcell* str = p->cell;
 
 		// Calculate the origin of the sub cell with the accumulated transformation
-		struct gds_ipair ori;
-		ori = transform_point((struct gds_ipair) { p->x, p->y }, tra);
+		gds_ipair_t ori;
+		ori = transform_point((gds_ipair_t) { p->x, p->y }, tra);
 
 		// Accumulate the transformation for vertices in the sub cell
 		struct gds_trans acc_tra;
@@ -753,7 +750,6 @@ static void gds_cell_clear(struct gcell* s)
 	parray_release(s->paths);
 }
 
-// User functions
 
 HGDS gds_db_create(const char* file, char* error, int elen)
 {
@@ -975,7 +971,7 @@ HGDS gds_db_create(const char* file, char* error, int elen)
 					int count = buf_size / 8; // number of pairs
 
 					cur_boundary->size = count;
-					cur_boundary->pairs = malloc(count * sizeof(struct gds_ipair));
+					cur_boundary->pairs = malloc(count * sizeof(gds_ipair_t));
 
 					for (int n = 0; n < count; n++) {
 						int i = 8 * n;
@@ -1005,7 +1001,7 @@ HGDS gds_db_create(const char* file, char* error, int elen)
 					int count = buf_size / 8; // number of pairs
 
 					cur_path->size = count;
-					cur_path->pairs = malloc(count * sizeof(struct gds_ipair));
+					cur_path->pairs = malloc(count * sizeof(gds_ipair_t));
 
 					for (int n = 0; n < count; n++) {
 						int i = 8 * n;
@@ -1090,7 +1086,7 @@ HGDS gds_db_create(const char* file, char* error, int elen)
 			struct gds_path* p = parray_get(cell->paths, j);
 
 			p->esize = 2 * p->size + 1;
-			p->epairs = malloc(p->esize * sizeof(struct gds_ipair));
+			p->epairs = malloc(p->esize * sizeof(gds_ipair_t));
 
 			expand_path(p->epairs, p->pairs, p->size, p->width, p->pathtype);
 		}
@@ -1210,7 +1206,7 @@ int gds_write(HGDS hGds, const char* dest, parray* pset, char* error, int elen)
 
 	uint64_t size = parray_size(pset);
 	for (int i = 0; i < size; i++) {
-		struct gds_poly* p = parray_get(pset, i);
+		gds_poly_t* p = parray_get(pset, i);
 
 		file_append_poly(pdest, p->pairs, p->size, p->layer);
 	}
@@ -1228,7 +1224,7 @@ int gds_write(HGDS hGds, const char* dest, parray* pset, char* error, int elen)
 	return 1;
 }
 
-int gds_poly_contains_point(struct gds_ipair* poly, int n, struct gds_ipair p)
+int gds_poly_contains_point(gds_ipair_t* poly, int n, gds_ipair_t p)
 {
 	/**
 	* Evaluate if test point P is inside the polygon @poly.
@@ -1333,17 +1329,6 @@ void gds_all_cells(HGDS hGds)
 	printf("\n");
 }
 
-void gds_polyset_release(parray* pset)
-{
-	uint64_t size = parray_size(pset);
-	for (int i = 0; i < size; i++)
-	{
-		gds_poly* p = parray_get(pset, i);
-		free(p->pairs);
-		free(p);
-	}
-}
-
 char* gds_getfile(HGDS hGds)
 {
 	struct gds_db* gds = (struct gds_db*)hGds;
@@ -1355,5 +1340,16 @@ float gds_getuu(HGDS hGds)
 {
 	struct gds_db* gds = (struct gds_db*)hGds;
 
-	return (float) gds->uu_per_dbunit;
+	return (float)gds->uu_per_dbunit;
+}
+
+void gds_polyset_release(parray* pset)
+{
+	uint64_t size = parray_size(pset);
+	for (int i = 0; i < size; i++)
+	{
+		gds_poly_t* p = parray_get(pset, i);
+		free(p->pairs);
+		free(p);
+	}
 }

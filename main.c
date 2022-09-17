@@ -4,7 +4,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-
 int main(int argc, char** argv)
 {
 	// Example code
@@ -35,7 +34,7 @@ int main(int argc, char** argv)
 	// the given bounding box
 	//
 
-	// Bounding box nottom left coordinates followed by width and height
+	// Bounding box bottom left coordinates followed by width and height
 	double bounds[4] = { 28.7, 45.2, 80.0, 60.0 };
 
 	// Pointer array to polygons for the resulting polygons to place in
@@ -67,7 +66,7 @@ int main(int argc, char** argv)
 	// Release the memory occupied by the database
 	gds_db_release(hGds);
 
-	// Release the polygons objects in pset
+	// Release all the polygons in pset
 	gds_polyset_release(pset);
 
 	// Release the memory occupied by pset

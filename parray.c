@@ -26,6 +26,14 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+/*
+ *
+ * A simple generic dynamic pointer array which can be used to store and access
+ * general objects. Not responsible for allocating and freeing memory to the
+ * pointers.
+ * 
+ */
+
 #include "parray.h"
 
 #include <stdio.h>
@@ -60,10 +68,10 @@ static void parray_resize(parray* v, uint64_t capacity)
 void parray_release(parray* v)
 {
     free(v->parray);
+
     v->parray = NULL;
     v->capacity = 0;
     v->size = 0;
-
     free(v);
 }
 

@@ -42,15 +42,15 @@ typedef void* HGDS;
  * structures defined below.
  */
 
-typedef struct gds_ipair {
+typedef struct {
 	int x, y;
-} gds_ipair;
+} gds_ipair_t;
 
-typedef struct gds_poly {
-	gds_ipair* pairs;
+typedef struct {
+	gds_ipair_t* pairs;
 	uint16_t size;
 	uint16_t layer;
-} gds_poly;
+} gds_poly_t;
 
 /*
  * Creates a gds database structure from a file
@@ -71,11 +71,12 @@ void gds_db_release(HGDS hGds);
  * output to a pointer array "pvec"
  * 
  * @bounds: boundary box (xmin, ymin, dx, dy) of polygons to include or
- *		   NULL if all polygons are to be included
+ *		    NULL if the entire cell is to be included
  *
  * @callback: a callback function that can be used to update progress on during
  *            flattening. If it returns 1 flattening will terminate. Can be
- *            set NULL.
+ *            set NULL. The first parameter is the number of polygons added
+ *            so far and the second parameter the number of polygons scanned.
  * 
  * @max_polys: Max number of polygons to output (to limit memory)
  * 
@@ -101,7 +102,7 @@ int gds_write(HGDS hGds, const char* dest, parray* pvec, char* error, int elen);
  * Checks if point @p is in polygon @poly. Polygon is closed with @n vertices.
  * The nth vertex is the same as the first.
  */
-int gds_poly_contains_point(struct gds_ipair* poly, int n, struct gds_ipair p);
+int gds_poly_contains_point(gds_ipair_t* poly, int n, gds_ipair_t p);
 
 /*
  * Prints all top cells of the gds database structure
@@ -118,7 +119,7 @@ void gds_all_cells(HGDS hGds);
  */
 void gds_polyset_release(parray* pset);
 
-/* Retrieve the GDS file path from the GDS object */
+/* Retrieve the GDS file used to create the given GDS database */
 char* gds_getfile(HGDS hGds);
 
 /* Retrieve the size of the db unit in user units */
