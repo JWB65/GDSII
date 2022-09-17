@@ -706,26 +706,30 @@ static void gds_cell_clear(struct gcell* s)
 	uint64_t i;
 
 	uint64_t size = parray_size(s->srefs);
-	for (i = 0; i < size; i++) {
+	for (i = 0; i < size; i++)
+	{
 		free(((struct gds_sref*)parray_get(s->srefs, i)));
 	}
 	parray_release(s->srefs);
 
 	size = parray_size(s->arefs);
-	for (i = 0; i < size; i++) {
+	for (i = 0; i < size; i++)
+	{
 		free(((struct gds_aref*)parray_get(s->arefs, i)));
 	}
 	parray_release(s->arefs);
 
 	size = parray_size(s->boundaries);
-	for (i = 0; i < size; i++) {
+	for (i = 0; i < size; i++)
+	{
 		free(((struct gds_bndry*)parray_get(s->boundaries, i))->pairs);
 		free(((struct gds_bndry*)parray_get(s->boundaries, i)));
 	}
 	parray_release(s->boundaries);
 
 	size = parray_size(s->paths);
-	for (i = 0; i < size; i++) {
+	for (i = 0; i < size; i++)
+	{
 		free(((struct gds_path*)parray_get(s->paths, i))->pairs);
 		free(((struct gds_path*)parray_get(s->paths, i))->epairs);
 		free(((struct gds_path*)parray_get(s->paths, i)));
@@ -804,62 +808,46 @@ HGDS gds_db_create(const char* file, char* error, int elen)
 			break;
 		case GDS_BGNSTR:
 			scount++;
-
 			cur_str = calloc(1, sizeof(struct gcell));
-
 			cur_str->boundaries = parray_create();
 			cur_str->paths = parray_create();
 			cur_str->srefs = parray_create();
 			cur_str->arefs = parray_create();
-
 			break;
 		case GDS_ENDSTR:
-
 			parray_add(gds->cells, cur_str);
 			cur_str = NULL;
-
 			break;
 		case GDS_UNITS:
 			{
 				gds->uu_per_dbunit = buf_read_float(buf);
 				gds->meter_per_dbunit = buf_read_float(buf + 8);
-
 				memcpy(gds->units, buf, 16); // also store the buffer raw data
-
 				break;
 			}
 		case GDS_STRNAME:
 			{
 				// strname is already filled with zeros
 				memcpy_s(cur_str->strname, GDS_MAX_STR_NAME + 1, buf, buf_size);
-
 				break;
 			}
 		case GDS_BOUNDARY:
-
 			// create a boundary element on the heap
 			cur_boundary = calloc(1, sizeof(struct gds_bndry));
-
 			break;
 		case GDS_PATH:
-
 			// create a path element on the heap
 			cur_path = calloc(1, sizeof(struct gds_path));
-
 			break;
 		case GDS_SREF:
-
 			// create a sref element on the heap
 			cur_sref = calloc(1, sizeof(struct gds_sref));
 			cur_sref->mag = 1.0; // default
-
 			break;
 		case GDS_AREF:
-
 			// create a aref element on the heap
 			cur_aref = calloc(1, sizeof(struct gds_aref));
 			cur_aref->mag = 1.0; // default
-
 			break;
 		case GDS_TEXT:
 			break;
@@ -869,7 +857,6 @@ HGDS gds_db_create(const char* file, char* error, int elen)
 			break;
 		case GDS_ENDEL:
 			// add element to the current structure
-
 			if (cur_boundary)
 			{
 				parray_add(cur_str->boundaries, cur_boundary);
@@ -884,10 +871,8 @@ HGDS gds_db_create(const char* file, char* error, int elen)
 				parray_add(cur_str->arefs, cur_aref);
 				cur_aref = NULL;
 			}
-
 			break;
 		case GDS_SNAME: // SREF, AREF
-
 			if (cur_sref)
 			{
 				memcpy_s(cur_sref->sname, GDS_MAX_STR_NAME + 1, buf, buf_size);
@@ -896,55 +881,43 @@ HGDS gds_db_create(const char* file, char* error, int elen)
 				memcpy_s(cur_aref->sname, GDS_MAX_STR_NAME + 1, buf, buf_size);
 				cur_aref->sname[buf_size] = 0;
 			}
-
 			break;
 		case GDS_COLROW: // AREF
-
 			if (cur_aref)
 			{
 				cur_aref->col = buf[0] << 8 | buf[1];
 				cur_aref->row = buf[2] << 8 | buf[3];
 			}
-
 			break;
 		case GDS_PATHTYPE:
-
 			if (cur_path)
 			{
 				cur_path->pathtype = buf[0] << 8 | buf[1];
 			}
-
 			break;
 		case GDS_STRANS: // SREF, AREF, TEXT
-
 			if (cur_sref)
 			{
 				cur_sref->strans = buf[0] << 8 | buf[1];
 			} else if (cur_aref) {
 				cur_aref->strans = buf[0] << 8 | buf[1];
 			}
-
 			break;
 		case GDS_ANGLE: // SREF, AREF, TEXT
-
 			if (cur_sref)
 			{
 				cur_sref->angle = (float)(M_PI * buf_read_float(buf) / 180.0);
 			} else if (cur_aref) {
 				cur_aref->angle = (float)(M_PI * buf_read_float(buf) / 180.0);
 			}
-
 			break;
 		case GDS_MAG: // SREF, AREF, TEXT
-			//printf("--> MAG read\n");
-
 			if (cur_sref)
 			{
 				cur_sref->mag = (float)buf_read_float(buf);
 			} else if (cur_aref) {
 				cur_aref->mag = (float)buf_read_float(buf);
 			}
-
 			break;
 		case GDS_XY:
 			{
@@ -996,26 +969,21 @@ HGDS gds_db_create(const char* file, char* error, int elen)
 						cur_path->pairs[n].y = y;
 					}
 				}
-
 				break;
 			}
 		case GDS_LAYER: // BOUNDARY, PATH, TEXT, NODE, BOX
-
 			if (cur_boundary)
 			{
 				cur_boundary->layer = buf[0] << 8 | buf[1];
 			} else if (cur_path) {
 				cur_path->layer = buf[0] << 8 | buf[1];
 			}
-
 			break;
 		case GDS_WIDTH: // PATH, TEXT
-
 			if (cur_path)
 			{
 				cur_path->width = buf[0] << 24 | buf[1] << 16 | buf[2] << 8 | buf[3];
 			}
-
 			break;
 		case GDS_DATATYPE:
 			break;
