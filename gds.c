@@ -163,12 +163,10 @@ enum GDS_RECORD {
 	GDS_FORMAT = 0x3602
 };
 
-// Standard form of a line
 struct gds_line {
 	double a, b, c;
 };
 
-// Transformation parameters
 struct gds_trans {
 	int x, y;
 	float mag, angle;
@@ -182,8 +180,10 @@ struct bb {
 	int32_t ymax;
 };
 
-// File global variable with information that otherwise needed to be passed
-// during recursion
+/*
+ * Global parameter with information that otherwise needs to be passed between
+ * recurances
+ */
 static struct rinfo {
 	parray* out_pset;
 	struct gds_db* gds;
@@ -194,14 +194,13 @@ static struct rinfo {
 	int interupt;
 } g_info;
 
-// Converts buffer into a double in the format used by the GDS standard
 static double buf_read_float(unsigned char* p)
 {
 	int i, sign, exp;
 	double fraction;
 
 	// The binary representation is with 7 bits in the exponent and 56 bits in
-	// the fraction:
+	// the mantissa:
 	//
 	// SEEEEEEE MMMMMMMM MMMMMMMM MMMMMMMM
 	// MMMMMMMM MMMMMMMM MMMMMMMM MMMMMMMM
@@ -234,7 +233,6 @@ static double buf_read_float(unsigned char* p)
 	return (pow(16, exp) * sign * fraction);
 }
 
-// Writes int to buffer in format used by the GDS standard
 static void buf_write_int(char* p, int offset, int n)
 {
 	p[offset + 0] = (n >> 24) & 0xFF;
@@ -243,7 +241,6 @@ static void buf_write_int(char* p, int offset, int n)
 	p[offset + 3] = n & 0xFF;
 }
 
-// Find cell with name @name in @gds
 static struct gcell* find_struct(struct gds_db* gds, char* name)
 {
 	uint64_t i;
@@ -261,7 +258,6 @@ static struct gcell* find_struct(struct gds_db* gds, char* name)
 	return NULL;
 }
 
-// Appends generic GDS record to file
 static void file_append_record(FILE* file, uint16_t record)
 {
 	char buf[4];
@@ -274,7 +270,6 @@ static void file_append_record(FILE* file, uint16_t record)
 	fwrite(buf, 4, 1, file);
 }
 
-// Appends record with short to file
 static void file_append_short(FILE* file, uint16_t record, uint16_t data)
 {
 	char buf[6];
@@ -290,7 +285,6 @@ static void file_append_short(FILE* file, uint16_t record, uint16_t data)
 	fwrite(buf, 6, 1, file);
 }
 
-// Appends record with array of bytes to file
 static void file_append_bytes(FILE* file, uint16_t record, char* data, int len)
 {
 	char buf[4];
@@ -304,7 +298,6 @@ static void file_append_bytes(FILE* file, uint16_t record, char* data, int len)
 	fwrite(data, len, 1, file);
 }
 
-// Appends record with string to file (pad with zero if needed)
 static void file_append_string(FILE* file, uint16_t record, char* string)
 {
 	char buf[4];
@@ -325,7 +318,6 @@ static void file_append_string(FILE* file, uint16_t record, char* string)
 	if (text_len % 2) putc(0, file);
 }
 
-// Append polygon to file
 static void file_append_poly(FILE* pfile, gds_ipair_t* p, int size, uint16_t layer)
 {
 	// store in buffer in the format of the gds standard
@@ -348,7 +340,6 @@ static void file_append_poly(FILE* pfile, gds_ipair_t* p, int size, uint16_t lay
 	free(buf);
 }
 
-// Append polygon to polygon set
 static void polyset_add_poly(parray* pset, gds_ipair_t* in, int size, uint16_t layer)
 {
 	if (in == NULL || pset == NULL)
@@ -367,7 +358,6 @@ static void polyset_add_poly(parray* pset, gds_ipair_t* in, int size, uint16_t l
 	parray_add(pset, poly);
 }
 
-// Intersection between two lines in the standard form
 static gds_ipair_t line_intersection(struct gds_line* one, struct gds_line* two)
 {
 	double xh, yh, wh;
@@ -381,7 +371,6 @@ static gds_ipair_t line_intersection(struct gds_line* one, struct gds_line* two)
 	return (gds_ipair_t) { (int)(xh / wh), (int)(yh / wh) };
 }
 
-// Project a point onto a line
 static gds_ipair_t line_project(gds_ipair_t p, struct gds_line* line)
 {
 	struct gds_line normal;
@@ -397,9 +386,13 @@ static gds_ipair_t line_project(gds_ipair_t p, struct gds_line* line)
 	return line_intersection(line, &normal);
 }
 
-// Extends a vector given by @tail and @head in the tail direction by @length
 static gds_ipair_t extend_vector(gds_ipair_t tail, gds_ipair_t head, double length)
 {
+	/* 
+	 * Extends a vector given by @tail and @head in the tail direction by
+	 * @length
+	 */
+
 	double segx, segy, norm;
 	gds_ipair_t out = { tail.x, tail.y };
 
@@ -416,15 +409,12 @@ static gds_ipair_t extend_vector(gds_ipair_t tail, gds_ipair_t head, double leng
 	return out;
 }
 
-// Sums two pairs
 static gds_ipair_t vec_sum(gds_ipair_t one, gds_ipair_t two)
 {
 	return (gds_ipair_t) { one.x + two.x, one.y + two.y };
 }
 
-// Expands a GDS path into a simple polygon
-static void expand_path(gds_ipair_t* pout, gds_ipair_t* pin, int size, int width,
-	int pathtype)
+static void expand_path(gds_ipair_t* pout, gds_ipair_t* pin, int size, int width, int pathtype)
 {
 	int i;
 	double hwidth = width / 2.0;
@@ -489,7 +479,6 @@ static void expand_path(gds_ipair_t* pout, gds_ipair_t* pin, int size, int width
 	free(mlines);
 }
 
-// Cursory test if poly overlaps with bounding box in global g_info structure
 static int poly_overlap_test(gds_ipair_t* p, int size)
 {
 	// Returns false if certainly no overlap
@@ -521,7 +510,6 @@ static int poly_overlap_test(gds_ipair_t* p, int size)
 	return 1;
 }
 
-// Add polygon to the file and/or polygon set
 static void add_poly(gds_ipair_t* pairs, int size, uint16_t layer)
 {
 	g_info.scount++;
@@ -549,9 +537,7 @@ static void add_poly(gds_ipair_t* pairs, int size, uint16_t layer)
 	}
 }
 
-// Perform a transformation: reflection -> rotation -> scaling -> translation
-static void transform_poly(gds_ipair_t* pout, gds_ipair_t* pin, int size,
-	struct gds_trans tra)
+static void transform_poly(gds_ipair_t* pout, gds_ipair_t* pin, int size, struct gds_trans tra)
 {
 	// Reflect with respect to x axis before rotation
 	float sign = 1.f;
@@ -567,7 +553,6 @@ static void transform_poly(gds_ipair_t* pout, gds_ipair_t* pin, int size,
 	}
 }
 
-// Perform a transformation: reflection -> rotation -> scaling -> translation
 static gds_ipair_t transform_point(gds_ipair_t in, struct gds_trans tra)
 {
 	// Reflect with respect to x axis before rotation
@@ -585,7 +570,6 @@ static gds_ipair_t transform_point(gds_ipair_t in, struct gds_trans tra)
 	return out;
 }
 
-// Collapse cell
 static void collapse_cell(struct gcell* top, struct gds_trans tra)
 {
 	gds_ipair_t out[400];
@@ -717,7 +701,6 @@ static void collapse_cell(struct gcell* top, struct gds_trans tra)
 	}
 }
 
-// Free memory allocated in GDS structure @s
 static void gds_cell_clear(struct gcell* s)
 {
 	uint64_t i;
@@ -750,6 +733,7 @@ static void gds_cell_clear(struct gcell* s)
 	parray_release(s->paths);
 }
 
+/* Public functions */
 
 HGDS gds_db_create(const char* file, char* error, int elen)
 {
@@ -1224,35 +1208,6 @@ int gds_write(HGDS hGds, const char* dest, parray* pset, char* error, int elen)
 	return 1;
 }
 
-int gds_poly_contains_point(gds_ipair_t* poly, int n, gds_ipair_t p)
-{
-	/**
-	* Evaluate if test point P is inside the polygon @poly.
-	* Returns true if yes and false if no
-	*
-	* Caller needs to guarantee @poly != NULL
-	*/
-
-	int count, i;
-
-	// counts the segment crossed by a vertical line downwards from test point P
-	count = 0;
-	for (i = 0; i < n - 1; i++) {
-
-		// Check if segment i will cross a vertical line through the test point
-		if (((poly[i].x <= p.x) && (poly[i + 1].x > p.x)) || ((poly[i].x > p.x) && (poly[i + 1].x <= p.x))) {
-
-			// add count if it crosses
-			if (p.y < poly[i].y + ((p.x - poly[i].x) * (poly[i + 1].y - poly[i].y)) / (poly[i + 1].x - poly[i].x)) {
-				count++;
-			}
-		}
-	}
-
-	// if the coint is off the point is outside the polygon
-	return (count % 2);
-}
-
 void gds_top_cells(HGDS hGds)
 {
 	struct gds_db* gds = (struct gds_db*)hGds;
@@ -1352,4 +1307,33 @@ void gds_polyset_release(parray* pset)
 		free(p->pairs);
 		free(p);
 	}
+}
+
+int gds_poly_contains_point(gds_ipair_t* poly, int n, gds_ipair_t p)
+{
+	/**
+	* Evaluate if test point P is inside the polygon @poly.
+	* Returns true if yes and false if no
+	*
+	* Caller needs to guarantee @poly != NULL
+	*/
+
+	int count, i;
+
+	// counts the segment crossed by a vertical line downwards from test point P
+	count = 0;
+	for (i = 0; i < n - 1; i++) {
+
+		// Check if segment i will cross a vertical line through the test point
+		if (((poly[i].x <= p.x) && (poly[i + 1].x > p.x)) || ((poly[i].x > p.x) && (poly[i + 1].x <= p.x))) {
+
+			// add count if it crosses
+			if (p.y < poly[i].y + ((p.x - poly[i].x) * (poly[i + 1].y - poly[i].y)) / (poly[i + 1].x - poly[i].x)) {
+				count++;
+			}
+		}
+	}
+
+	// if the coint is off the point is outside the polygon
+	return (count % 2);
 }
