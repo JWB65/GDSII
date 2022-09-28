@@ -28,99 +28,98 @@
 
 #pragma once
 
-#include "parray.h"
-#include <inttypes.h>
+#include <string>
+#include <vector>
 
-/* Maximum number of characters in a cell name */
-#define GDS_MAX_STR_NAME 127
+namespace GDS
+{
 
-/* Opaque handle to the GDS database structure */
-typedef void* HGDS;
+	/* Opaque handle to the GDS database structure */
+	typedef void* HGDS;
 
-/* 
- * The user of the library needs to define a pointer array of gds_poly
- * structures defined below.
- */
+	/*
+	 * Polygon structure with member denoting the GDS layer in which the polygon
+	 * is located
+	 */
 
-typedef struct {
-	int x, y;
-} gds_ipair_t;
+	struct IPair {
+		int x, y;
+	};
 
-typedef struct {
-	gds_ipair_t* pairs;
-	uint16_t size;
-	uint16_t layer;
-} gds_poly_t;
+	struct Poly {
+		IPair* pairs;
+		uint16_t size;
+		uint16_t layer;
+	};
 
-/*
- * Creates a gds database structure from a file
- * 
- * @error and @elen: char array with a max length for an error message
- *
- * Return: GDS database handle or NULL if failed
- */
-HGDS gds_db_create(const char* file, char* error, int elen);
+	/*
+	 * Creates a gds database structure from a file
+	 *
+	 * @msg: receives the error message if failure. Can be nullptr.
+	 *
+	 * returns: GDS database handle or nullptr if failed.
+	 */
+	HGDS create(const std::wstring& file, std::wstring* msg);
 
-/*
- * Releases the memory held by the GDS database handle
- */
-void gds_db_release(HGDS hGds);
+	/*
+	 * Releases the memory held by the GDS database handle
+	 */
+	void release(HGDS hGds);
 
-/*
- * Flattens the cell "cell" in gds_database structure "gds" and writes the
- * output to a pointer array "pvec"
- * 
- * @bounds: boundary box (xmin, ymin, dx, dy) of polygons to include or
- *		    NULL if the entire cell is to be included
- *
- * @callback: a callback function that can be used to update progress on during
- *            flattening. If it returns 1 flattening will terminate. Can be
- *            set NULL. The first parameter is the number of polygons added
- *            so far and the second parameter the number of polygons scanned.
- * 
- * @max_polys: Max number of polygons to output (to limit memory)
- * 
- * @error and @elen: char array with max length for an error message if flattening
- *                   failed
- * 
- * Return: 1 (success) 0 (failure)
- */
-int gds_collapse(HGDS hGds, const char* cell, const double* bounds, uint64_t max_polys,
-	parray* pvec, int (*callback)(uint64_t, uint64_t), char* error, int elen);
+	/*
+	 * Flattens the cell "cell" in gds_database structure "gds" and writes the
+	 * output to a pointer array "pvec"
+	 *
+	 * @bounds: boundary box (xmin, ymin, dx, dy) of polygons to include or
+	 *		    nullptr if the entire cell is to be included
+	 *
+	 * @callback: a callback function that can be used to update progress on during
+	 *            flattening. If it returns 1 flattening will terminate. Can be
+	 *            set nullptr. The first parameter is the number of polygons added
+	 *            so far and the second parameter the number of polygons scanned.
+	 *
+	 * @max_polys: Max number of polygons to output (to limit memory)
+	 *
+	 * @msg: receives the error message if failure. Can be nullptr.
+	 *
+	 * Return: 1 (success) 0 (failure)
+	 */
+	int collapse(HGDS hGds, const std::string& cell, const double* bounds, uint64_t max_polys,
+		std::vector<Poly*> &pvec, int (*callback)(uint64_t, uint64_t), std::wstring* msg);
 
-/*
- * Writes polyset "pset" to a GDS file
- * 
- * @error and @elen: char array with max length for an error message if there
- *					was a failure
- * 
- * Return: 1 (success) 0 (failure)
- */
-int gds_write(HGDS hGds, const char* dest, parray* pvec, char* error, int elen);
+	/*
+	 * Writes polyset "pset" to a GDS file
+	 *
+	 * @msg: receives the error message if failure. Can be nullptr.
+	 *
+	 * Return: 1 (success) 0 (failure)
+	 */
+	int write(HGDS hGds, const std::wstring& dest, std::vector<Poly*>& pvec, std::wstring* msg);
 
-/*
- * Checks if point @p is in polygon @poly. Polygon is closed with @n vertices.
- * The nth vertex is the same as the first.
- */
-int gds_poly_contains_point(gds_ipair_t* poly, int n, gds_ipair_t p);
+	/*
+	 * Checks if point @p is in polygon @poly. Polygon is closed with @n vertices.
+	 * The nth vertex is the same as the first.
+	 */
+	int gds_poly_contains_point(IPair* poly, int n, IPair p);
 
-/*
- * Prints all top cells of the gds database structure
- */
-void gds_top_cells(HGDS hGds);
+	/*
+	 * Prints all top cells of the gds database structure
+	 */
+	void top_cells(HGDS hGds);
 
-/*
- * Prints all cells of the gds database structure
- */
-void gds_all_cells(HGDS hGds);
+	/*
+	 * Prints all cells of the gds database structure
+	 */
+	void all_cells(HGDS hGds);
 
-/*
- * Support function to destroy all polygons pointed to by pointer array pset
- */
-void gds_polyset_release(parray* pset);
+	/*
+	 * Support function to destroy all polygons pointed to by pointer array pset
+	 */
+	void polyset_release(std::vector<Poly*> & pset);
 
-/* Retrieve the GDS file used to create the given GDS database */
-char* gds_getfile(HGDS hGds);
+	/* Retrieve the GDS file used to create the given GDS database */
+	std::wstring& getfile(HGDS hGds);
 
-/* Retrieve the size of the db unit in user units */
-float gds_getuu(HGDS hGds);
+	/* Retrieve the size of the db unit in user units */
+	float getuu(HGDS hGds);
+}

@@ -18,18 +18,12 @@
     <ClInclude Include="gds.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="parray.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="gds.c">
+    <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="parray.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="main.c">
+    <ClCompile Include="gds.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
