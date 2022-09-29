@@ -46,7 +46,6 @@ namespace GDS
 	// 
 	// In a path element the max number of pairs therefore is  2 x 8191 + 1 = 16383 pairs maximum.
 	//
-
 	const int MAX_PAIRS = 16383;
 
 	struct Bndry
@@ -205,10 +204,10 @@ namespace GDS
 		int32_t ymax = 0;
 	};
 
-	/*
-	 * Global parameter with information that otherwise needs to be passed between
-	 * recurances
-	 */
+	//
+	// Global parameter with information that otherwise needs to be passed between
+	// recurances
+	//
 	struct Rinfo
 	{
 		std::vector<Poly*>* out_pset;
@@ -548,7 +547,6 @@ namespace GDS
 		return 1;
 	}
 
-
 	static void trans_and_add_poly(IPair* pin, int size, Trans tra, uint16_t layer, Rinfo* info)
 	{
 		// Reflect with respect to x axis before rotation
@@ -564,6 +562,8 @@ namespace GDS
 		float c = cosf(tra.angle);
 
 		//ipair* g_out = (ipair*)malloc(size * sizeof(ipair));
+
+		// Having a fixed size array
 		IPair tpairs[MAX_PAIRS];
 
 
@@ -608,7 +608,6 @@ namespace GDS
 
 		//free(g_out);
 	}
-
 
 	static IPair transform_point(IPair in, Trans tra)
 	{
