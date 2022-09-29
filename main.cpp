@@ -25,7 +25,7 @@ int main(int argc, char** argv)
 
 	std::wstring filename(L"NAND.gds");
 	std::wstring error;
-	GDS::HGDS hGds = GDS::create(filename, &error);
+	GDS::HGDS hGds = GDS::Create(filename, &error);
 
 	if (hGds)
 	{
@@ -38,10 +38,10 @@ int main(int argc, char** argv)
 	}
 
 	// Print all the top cells in the database
-	GDS::top_cells(hGds);
+	GDS::ListTopCells(hGds);
 
 	// Print all the cells in the database
-	GDS::all_cells(hGds);
+	GDS::ListAllCells(hGds);
 
 	//
 	// Collapse a cell in the database and keep only polygons overlapping with
@@ -57,23 +57,20 @@ int main(int argc, char** argv)
 	// Vector to write the polygons too
 	std::vector<GDS::Poly*> pset;
 
-	// Max number of polygons (e.g. to limit memory)
-	uint64_t mcount = (uint64_t)10E+6;
-
-	if (GDS::collapse(hGds, cell, bounds, mcount, pset, nullptr, &error))
+	if (GDS::ExtractPolygons(hGds, cell, bounds, pset, nullptr, &error))
 	{
 		std::wstring cellw;
 		StringToWString(cellw, cell);
-		std::wcout << std::format(L"The GDS collapse of cell \"{}\" from file \"{}\" was succesful\n", cellw, filename);
+		std::wcout << std::format(L"Polygon extraction from cell \"{}\" in file \"{}\" was succesful\n", cellw, filename);
 	}
 	else
 	{
-		std::wcout << std::format(L"Error found collapsing cell: {}\n", error);
+		std::wcout << std::format(L"Error found extracting polygons: {}\n", error);
 		return 0;
 	}
 
 	wchar_t out[] = L"out.gds";
-	if (GDS::write(hGds, out, pset, &error))
+	if (GDS::WritePolys(hGds, out, pset, &error))
 	{
 		std::wcout << std::format(L"The GDS database was written succesfully to file \"{}\"\n", out);
 	}
@@ -84,10 +81,10 @@ int main(int argc, char** argv)
 	}
 
 	// Release the memory occupied by the database
-	GDS::release(hGds);
+	GDS::Release(hGds);
 
 	// Release all the polygons in pset
-	GDS::polyset_release(pset);
+	GDS::PolysetRelease(pset);
 	pset.clear();
 
 	return 0;

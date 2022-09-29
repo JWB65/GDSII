@@ -37,12 +37,16 @@
 
 namespace GDS
 {
-	/*
-	 * The maximum recond length is 0xFFFF including the 4 bytes header. Therefore,
-	 * the maximum number of pairs in an XY element is (0xFFFF - 4) / 8 = 8191
-	 *
-	 * In a path element it can be 2 x N + 1 = 16383 pairs maximum.
-	 */
+
+	//
+	// The maximum recond length of a GDS record is 0xFFFF including the 4 bytes header. Therefore,
+	// the maximum number of pairs in an XY element is (0xFFFF - 4) / 8 = 8191.
+	//
+	// A path element of n points expands to a polygon
+	// 
+	// In a path element the max number of pairs therefore is  2 x 8191 + 1 = 16383 pairs maximum.
+	//
+
 	const int MAX_PAIRS = 16383;
 
 	struct Bndry
@@ -211,7 +215,7 @@ namespace GDS
 		DB* gds = nullptr;
 		BB bbox;
 		int use_bb = 0;
-		uint64_t scount = 0, pcount = 0, max_polys = 0;
+		uint64_t scount = 0, pcount = 0;
 		int (*callback)(uint64_t, uint64_t) = nullptr;
 		int interupt = 0;
 	};
@@ -625,7 +629,7 @@ namespace GDS
 
 	static void collapse_cell(GCell* top, Trans tra, Rinfo* info)
 	{
-		if (info->pcount >= info->max_polys)
+		if (info->pcount >= MAX_POLYS)
 		{
 			return;
 		}
@@ -638,7 +642,7 @@ namespace GDS
 
 			trans_and_add_poly(b->pairs, b->size, tra, b->layer, info);
 
-			if (info->pcount >= info->max_polys || info->interupt)
+			if (info->pcount >= MAX_POLYS || info->interupt)
 			{
 				return;
 			}
@@ -653,7 +657,7 @@ namespace GDS
 
 			trans_and_add_poly(p->epairs, p->esize, tra, p->layer, info);
 
-			if (info->pcount >= info->max_polys || info->interupt)
+			if (info->pcount >= MAX_POLYS || info->interupt)
 			{
 				return;
 			}
@@ -694,7 +698,7 @@ namespace GDS
 			// Deeper level
 			collapse_cell(str, acc_tra, info);
 
-			if (info->pcount >= info->max_polys || info->interupt)
+			if (info->pcount >= MAX_POLYS || info->interupt)
 			{
 				return;
 			}
@@ -763,7 +767,7 @@ namespace GDS
 					// Down a level
 					collapse_cell(str, acc_tra, info);
 
-					if (info->pcount >= info->max_polys || info->interupt)
+					if (info->pcount >= MAX_POLYS || info->interupt)
 					{
 						return;
 					}
@@ -785,11 +789,43 @@ namespace GDS
 		}
 	}
 
+	static void gds_cell_clear(GCell* s)
+	{
+		uint64_t i;
+
+		uint64_t size = s->srefs.size();
+		for (i = 0; i < size; i++)
+		{
+			delete s->srefs.at(i);
+		}
+
+		size = s->arefs.size();
+		for (i = 0; i < size; i++)
+		{
+			delete s->arefs.at(i);
+		}
+
+		size = s->boundaries.size();
+		for (i = 0; i < size; i++)
+		{
+			delete[] s->boundaries.at(i)->pairs;
+			delete s->boundaries.at(i);
+		}
+
+		size = s->paths.size();
+		for (i = 0; i < size; i++)
+		{
+			delete[] s->paths.at(i)->epairs;
+			delete[] s->paths.at(i)->pairs;
+			delete s->paths.at(i);
+		}
+	}
+
 
 	/* Public functions */
 
 
-	HGDS create(const std::wstring& file, std::wstring* msg)
+	HGDS Create(const std::wstring& file, std::wstring* msg)
 	{
 		DB* gds = new DB;
 
@@ -1095,7 +1131,9 @@ namespace GDS
 		}
 
 		if (p_file)
+		{
 			fclose(p_file);
+		}
 
 		// Expand all path elements into polygons
 
@@ -1123,40 +1161,7 @@ namespace GDS
 		return gds;
 	}
 
-
-	static void gds_cell_clear(GCell* s)
-	{
-		uint64_t i;
-
-		uint64_t size = s->srefs.size();
-		for (i = 0; i < size; i++)
-		{
-			delete s->srefs.at(i);
-		}
-
-		size = s->arefs.size();
-		for (i = 0; i < size; i++)
-		{
-			delete s->arefs.at(i);
-		}
-
-		size = s->boundaries.size();
-		for (i = 0; i < size; i++)
-		{
-			delete[] s->boundaries.at(i)->pairs;
-			delete s->boundaries.at(i);
-		}
-
-		size = s->paths.size();
-		for (i = 0; i < size; i++)
-		{
-			delete[] s->paths.at(i)->epairs;
-			delete[] s->paths.at(i)->pairs;
-			delete s->paths.at(i);
-		}
-	}
-
-	void release(HGDS hGds)
+	void Release(HGDS hGds)
 	{
 		int i;
 
@@ -1175,8 +1180,7 @@ namespace GDS
 		delete gds;
 	}
 
-
-	int collapse(HGDS hGds, const std::string& cell, const double* bounds, uint64_t max_polys,
+	int ExtractPolygons(HGDS hGds, const std::string& cell, const double* bounds,
 		std::vector<Poly*>& pvec, int (*callback)(uint64_t, uint64_t), std::wstring* msg)
 	{
 		Rinfo g_info;
@@ -1196,7 +1200,6 @@ namespace GDS
 		}
 
 		g_info.gds = gds;
-		g_info.max_polys = max_polys;
 		g_info.out_pset = &pvec;
 
 		if (bounds != nullptr)
@@ -1240,7 +1243,7 @@ namespace GDS
 		return 1;
 	}
 
-	int write(HGDS hGds, const std::wstring& dest, std::vector<Poly*>& pvec, std::wstring* msg)
+	int WritePolys(HGDS hGds, const std::wstring& dest, std::vector<Poly*>& pvec, std::wstring* msg)
 	{
 		DB* gds = (DB*)hGds;
 
@@ -1284,7 +1287,7 @@ namespace GDS
 		return 1;
 	}
 
-	void top_cells(HGDS hGds)
+	void ListTopCells(HGDS hGds)
 	{
 		DB* gds = (DB*)hGds;
 
@@ -1345,7 +1348,7 @@ namespace GDS
 		std::cout << "\n";
 	}
 
-	void all_cells(HGDS hGds)
+	void ListAllCells(HGDS hGds)
 	{
 		DB* gds = (DB*)hGds;
 
@@ -1367,21 +1370,21 @@ namespace GDS
 		std::cout << "\n";
 	}
 
-	std::wstring& getfile(HGDS hGds)
+	std::wstring& Getfile(HGDS hGds)
 	{
 		DB* gds = (DB*)hGds;
 
 		return gds->fpath;
 	}
 
-	float getuu(HGDS hGds)
+	float Getuu(HGDS hGds)
 	{
 		DB* gds = (DB*)hGds;
 
 		return (float)gds->uu_per_dbunit;
 	}
 
-	void polyset_release(std::vector<Poly*>& pset)
+	void PolysetRelease(std::vector<Poly*>& pset)
 	{
 		uint64_t size = pset.size();
 		for (int i = 0; i < size; i++)
@@ -1392,7 +1395,7 @@ namespace GDS
 		}
 	}
 
-	int poly_contains_point(IPair* poly, int n, IPair p)
+	int PointInPolygon(IPair* poly, int n, IPair p)
 	{
 		/**
 		* Evaluate if test point P is inside the polygon @poly.
@@ -1403,7 +1406,7 @@ namespace GDS
 
 		int count, i;
 
-		// counts the segment crossed by a vertical line downwards from test point P
+		// counts the segments crossed by a vertical line downwards from test point P
 		count = 0;
 		for (i = 0; i < n - 1; i++)
 		{
