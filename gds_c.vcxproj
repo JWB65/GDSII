@@ -24,6 +24,7 @@
     <ProjectGuid>{f8627034-00bc-4655-a2ce-5c7d3f8c63af}</ProjectGuid>
     <RootNamespace>gdsc</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+    <ProjectName>gds</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
