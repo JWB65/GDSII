@@ -372,7 +372,6 @@ namespace GDS
 		delete[] buf;
 	}
 
-
 	static IPair line_intersection(Line* one, Line* two)
 	{
 		double xh, yh, wh;
@@ -821,7 +820,7 @@ namespace GDS
 	}
 
 
-	/* Public functions */
+	// Public functions
 
 
 	HGDS Create(const std::wstring& file, std::wstring* msg)
@@ -1236,7 +1235,7 @@ namespace GDS
 		Trans.angle = 0.0;
 		Trans.mirror = 0;
 
-		// start the recursion
+		// Start the recursion
 		collapse_cell(top, Trans, &g_info);
 
 		return 1;
