@@ -31,6 +31,7 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
 
+#include <format>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -845,7 +846,7 @@ namespace GDS
 		{
 			if (msg)
 			{
-				msg->assign(L"Open file error");
+				*msg = std::format(L"Failed opening file {}", file);
 			}
 
 			/* RETURN */
@@ -1149,9 +1150,6 @@ namespace GDS
 				p->esize = 2 * p->size + 1;
 				p->epairs = new IPair[p->esize];
 
-				if (p->layer > 255)
-					printf("");
-
 				expand_path(p->epairs, p->pairs, p->size, p->width, p->pathtype);
 			}
 		}
@@ -1190,7 +1188,7 @@ namespace GDS
 		{
 			if (msg)
 			{
-				msg->assign(L"Invalid GDS handle");
+				*msg = L"Invalid GDS handle";
 			}
 
 			/* RETURN */
@@ -1221,7 +1219,7 @@ namespace GDS
 		{
 			if (msg)
 			{
-				msg->assign(L"GDS cell %s not found");
+				*msg = std::format(L"GDS cell name not found");
 			}
 			return 0;
 		}
@@ -1368,7 +1366,7 @@ namespace GDS
 		std::cout << "\n";
 	}
 
-	std::wstring& Getfile(HGDS hGds)
+	std::wstring& GetFilepath(HGDS hGds)
 	{
 		DB* gds = (DB*)hGds;
 
